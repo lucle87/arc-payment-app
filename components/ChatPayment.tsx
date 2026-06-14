@@ -2,159 +2,193 @@
 
 import { useState } from "react";
 
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export default function ChatPayment() {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<any[]>([]);
+  const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [messages, setMessages] =
+    useState<Message[]>([]);
+
   async function handleSend() {
-    if (!input) return;
+    if (!text || loading) return;
+
+    const userMessage = text;
 
     setMessages((prev) => [
       ...prev,
       {
         role: "user",
-        content: input,
+        content: userMessage,
+      },
+      {
+        role: "assistant",
+        content: "Sending payment... ⏳",
       },
     ]);
 
+    setText("");
     setLoading(true);
 
     try {
-      // AI Parse
-      const aiRes = await fetch("/api/ai-send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: input,
-        }),
-      });
+      const aiRes = await fetch(
+        "/api/ai-send",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            text: userMessage,
+          }),
+        }
+      );
 
-      const aiData = await aiRes.json();
+      const aiData =
+        await aiRes.json();
 
       if (!aiData.success) {
         setMessages((prev) => [
-          ...prev,
+          ...prev.slice(0, -1),
           {
             role: "assistant",
-            content: aiData.error,
+            content:
+              aiData.error ??
+              "Payment failed ❌",
           },
         ]);
 
+        setLoading(false);
         return;
       }
 
-      // Send Payment
-      const sendRes = await fetch("/api/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          address: aiData.address,
-          amount: aiData.amount,
-          memo: aiData.memo,
-        }),
-      });
+      const sendRes = await fetch(
+        "/api/send",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            address:
+              aiData.address,
+            amount:
+              aiData.amount,
+          }),
+        }
+      );
 
-      const sendData = await sendRes.json();
+      const sendData =
+        await sendRes.json();
 
-      if (sendData.success) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `✅ Payment successful
+      const hash =
+        sendData.hash ??
+        sendData.result
+          ?.transactionHash ??
+        "";
 
-Recipient: ${aiData.address}
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        {
+          role: "assistant",
+          content: `Payment successful ✅
 
-Amount: ${aiData.amount} USDC
+Recipient:
+${aiData.address}
 
-Memo: ${aiData.memo}
+Amount:
+${aiData.amount} USDC
+
+Memo:
+${aiData.memo}
 
 Hash:
-
-${sendData.hash}`,
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: sendData.error,
-          },
-        ]);
-      }
-    } finally {
-      setLoading(false);
-      setInput("");
+${hash}`,
+        },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        {
+          role: "assistant",
+          content:
+            "Payment failed ❌",
+        },
+      ]);
     }
+
+    setLoading(false);
   }
 
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+    <div className="bg-zinc-950 rounded-3xl p-8">
 
       <h2 className="text-3xl font-bold mb-8">
-        Chat Payment
+        AI Wallet ⚡
       </h2>
 
       <div className="space-y-6 mb-8">
 
-        {messages.map((msg, index) => (
+        {messages.map(
+          (
+            msg,
+            index
+          ) => (
+            <div
+              key={index}
+              className={
+                msg.role ===
+                "user"
+                  ? "ml-auto max-w-xl bg-orange-500 rounded-2xl p-5"
+                  : "max-w-xl bg-zinc-800 rounded-2xl p-5"
+              }
+            >
+              <div className="font-bold mb-2">
 
-          <div
-            key={index}
-            className={
-              msg.role === "user"
-                ? "ml-auto max-w-2xl rounded-2xl bg-orange-500 p-4"
-                : "max-w-2xl rounded-2xl bg-zinc-900 p-4"
-            }
-          >
+                {msg.role ===
+                "user"
+                  ? "You"
+                  : "AI"}
 
-            <div className="mb-2 font-semibold">
+              </div>
 
-              {msg.role === "user"
-                ? "You"
-                : "AI"}
+              <div className="whitespace-pre-wrap">
+                {msg.content}
+              </div>
 
             </div>
-
-            <div className="whitespace-pre-wrap break-all text-sm">
-
-              {msg.content}
-
-            </div>
-
-          </div>
-
-        ))}
+          )
+        )}
 
       </div>
 
       <div className="flex gap-4">
 
         <input
-          value={input}
+          value={text}
           onChange={(e) =>
-            setInput(e.target.value)
+            setText(
+              e.target.value
+            )
           }
-          placeholder="Send 5 USDC to Alice for dinner 🍕"
-          className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4"
+          placeholder="Send 5 USDC to Alice for pizza 🍕"
+          className="flex-1 bg-zinc-800 rounded-xl px-5 py-4"
         />
 
         <button
           disabled={loading}
           onClick={handleSend}
-          className="rounded-2xl bg-orange-500 px-8 font-semibold"
+          className="bg-orange-500 px-8 rounded-xl"
         >
-
           {loading
-            ? "..."
+            ? "Sending..."
             : "Send"}
-
         </button>
 
       </div>

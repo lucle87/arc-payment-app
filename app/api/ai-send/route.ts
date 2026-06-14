@@ -1,66 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const contacts = [
-  {
-    name: "alice",
-    address:
-      "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-  },
-  {
-    name: "bob",
-    address:
-      "0x1234567890123456789012345678901234567890",
-  },
-  {
-    name: "charlie",
-    address:
-      "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-  },
-];
+import { contacts } from "@/data/contacts";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const { text } = await req.json();
 
-    const text = body.text.toLowerCase();
+    console.log("INPUT:", text);
 
-    const amountMatch =
-      text.match(/\d+(\.\d+)?/);
+    // amount
+    const amountMatch = text.match(/\d+(\.\d+)?/);
+    const amount = amountMatch?.[0];
 
-    const amount =
-      amountMatch?.[0] || "1";
+    // recipient
+    const toMatch = text.match(/to\s+([A-Za-z]+)/i);
+    const recipient = toMatch?.[1];
 
-    const contact = contacts.find(
-      (c) =>
-        text.includes(c.name)
-    );
+    // memo
+    const memoMatch = text.match(/for\s+(.+)/i);
+    const memo = memoMatch?.[1] ?? "";
 
-    if (!contact) {
+    console.log({
+      amount,
+      recipient,
+    });
+
+    if (!recipient) {
       return NextResponse.json({
         success: false,
-        error: "Contact not found",
+        error: "Recipient not found",
       });
     }
 
-    let memo = "";
+    const address =
+      contacts[recipient as keyof typeof contacts];
 
-    const forIndex =
-      text.indexOf("for");
-
-    if (forIndex !== -1) {
-      memo = body.text.substring(
-        forIndex + 4
-      );
+    if (!address) {
+      return NextResponse.json({
+        success: false,
+        error: `Contact '${recipient}' not found`,
+      });
     }
 
     return NextResponse.json({
       success: true,
-
-      address:
-        contact.address,
-
+      recipient,
+      address,
       amount,
-
       memo,
     });
   } catch (error) {
