@@ -1,16 +1,7 @@
-/// <reference types="node" />
+import { createAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
 
-import { createViemAdapterFromPrivateKey }
-from "@circle-fin/adapter-viem-v2";
+const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
 
-const privateKey = process.env.PRIVATE_KEY;
-
-if (!privateKey) {
-  throw new Error("PRIVATE_KEY is missing in .env.local");
-}
-
-const adapter = createViemAdapterFromPrivateKey({
+export const adapter = createAdapterFromPrivateKey({
   privateKey,
 });
-
-export default adapter;
