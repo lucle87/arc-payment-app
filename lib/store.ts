@@ -1,5 +1,12 @@
-import fs from "fs/promises";
-import path from "path";
+import { Redis } from "@upstash/redis";
+
+/**
+ * Transaction store backed by Upstash Redis (works on Vercel serverless,
+ * unlike the previous file-based store which can't persist there).
+ *
+ * Function names are unchanged, so no other file needs editing.
+ * Records are kept in a single JSON list under the key below.
+ */
 
 export type TxStatus = "Pending" | "Success" | "Failed";
 
@@ -12,26 +19,32 @@ export type TxRecord = {
   status: TxStatus;
 };
 
-const FILE = path.join(process.cwd(), "data", "transactions.json");
+const KEY = "transactions";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
 async function readAll(): Promise<TxRecord[]> {
   try {
-    const raw = await fs.readFile(FILE, "utf8");
-    const data = JSON.parse(raw);
-    return Array.isArray(data) ? (data as TxRecord[]) : [];
-  } catch {
+    const data = await redis.get<TxRecord[]>(KEY);
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("[store] read failed:", e);
     return [];
   }
 }
 
 async function writeAll(records: TxRecord[]): Promise<void> {
   try {
-    await fs.writeFile(FILE, JSON.stringify(records, null, 2), "utf8");
+    await redis.set(KEY, records);
   } catch (e) {
-    console.error("Could not persist transactions:", e);
+    console.error("[store] write failed:", e);
   }
 }
 
+/** Newest first. */
 export async function getTransactions(): Promise<TxRecord[]> {
   const all = await readAll();
   return [...all].reverse();
@@ -52,7 +65,11 @@ export async function updateStatus(hash: string, status: TxStatus): Promise<void
   }
 }
 
-// Wipe all stored history.
+/** Wipe all stored history (used by the "Clear history" button). */
 export async function clearTransactions(): Promise<void> {
-  await writeAll([]);
+  try {
+    await redis.del(KEY);
+  } catch (e) {
+    console.error("[store] clear failed:", e);
+  }
 }
