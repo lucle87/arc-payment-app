@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAddress } from "viem";
 import { usePrivy } from "@privy-io/react-auth";
-import { contacts } from "@/lib/contacts";
+import { useContacts } from "@/lib/useContacts";
 import { useSendUsdc } from "@/lib/useSendUsdc";
 
 type Result =
@@ -12,14 +11,11 @@ type Result =
   | { status: "success"; hash: string; txStatus: string }
   | { status: "error"; message: string };
 
-// Accept any-cased valid address; reject only bad format.
 const HEX = /^0x[0-9a-fA-F]{40}$/;
-function isValidAddr(a: string) {
-  return HEX.test(a);
-}
 
 export default function SendForm({ onSent }: { onSent?: () => void }) {
   const { authenticated, login } = usePrivy();
+  const { contacts, nameByAddress } = useContacts();
   const { send } = useSendUsdc();
 
   const [address, setAddress] = useState("");
@@ -30,15 +26,14 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
 
   useEffect(() => {
     const to = new URLSearchParams(window.location.search).get("to");
-    if (to && isValidAddr(to)) setAddress(to);
+    if (to && HEX.test(to)) setAddress(to);
   }, []);
 
   const amountNum = Number(amount);
   const amountValid = Number.isFinite(amountNum) && amountNum > 0;
-  const addressValid = isValidAddr(address);
+  const addressValid = HEX.test(address);
   const canSubmit = addressValid && amountValid;
-
-  const recipientName = contacts.find((c) => c.address === address)?.name ?? address;
+  const recipientName = nameByAddress(address) ?? address;
 
   async function doSend() {
     setResult({ status: "sending" });
@@ -74,9 +69,11 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
               onChange={(e) => setAddress(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 mb-3"
             >
-              <option value="">Select a contact…</option>
+              <option value="">
+                {contacts.length ? "Select a contact…" : "No contacts — add some, or paste below"}
+              </option>
               {contacts.map((c) => (
-                <option key={c.address} value={c.address}>
+                <option key={c.id} value={c.address}>
                   {c.name}
                 </option>
               ))}
@@ -134,10 +131,7 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
                 <span className="font-bold break-all">{recipientName}</span>?
               </p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirming(false)}
-                  className="flex-1 rounded-xl border border-zinc-700 py-3"
-                >
+                <button onClick={() => setConfirming(false)} className="flex-1 rounded-xl border border-zinc-700 py-3">
                   Cancel
                 </button>
                 <button

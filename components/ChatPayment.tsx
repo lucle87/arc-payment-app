@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useContacts } from "@/lib/useContacts";
 import { useSendUsdc } from "@/lib/useSendUsdc";
 
 type Message = { role: "user" | "assistant"; content: string; hash?: string };
@@ -9,6 +10,7 @@ type Pending = { recipient: string; address: string; amount: string; memo: strin
 
 export default function ChatPayment({ onSent }: { onSent?: () => void }) {
   const { authenticated, login } = usePrivy();
+  const { resolveByName } = useContacts();
   const { send } = useSendUsdc();
 
   const [text, setText] = useState("");
@@ -25,10 +27,7 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
 
   async function handleParse() {
     if (!text.trim() || loading) return;
-    if (!authenticated) {
-      login();
-      return;
-    }
+    if (!authenticated) return login();
     const userMessage = text;
     setText("");
     setLoading(true);
@@ -46,18 +45,19 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
         replaceLast({ role: "assistant", content: ai.error ?? "Couldn't understand that ❌" });
         return;
       }
-      setPending({
-        recipient: ai.recipient,
-        address: ai.address,
-        amount: ai.amount,
-        memo: ai.memo ?? "",
-      });
+      const contact = resolveByName(ai.recipient);
+      if (!contact) {
+        replaceLast({
+          role: "assistant",
+          content: `Contact "${ai.recipient}" not found. Add them in Contacts.`,
+        });
+        return;
+      }
+      setPending({ recipient: contact.name, address: contact.address, amount: ai.amount, memo: ai.memo ?? "" });
       replaceLast({
         role: "assistant",
         content:
-          `Please confirm:\n\n` +
-          `Recipient: ${ai.recipient}\n` +
-          `Amount: ${ai.amount} USDC` +
+          `Please confirm:\n\nRecipient: ${contact.name}\nAmount: ${ai.amount} USDC` +
           (ai.memo ? `\nMemo: ${ai.memo}` : ""),
       });
     } catch {
@@ -74,24 +74,18 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
     setLoading(true);
     push({ role: "assistant", content: `Sending ${p.amount} USDC to ${p.recipient}… ⏳` });
     try {
-      const { hash, status } = await send({
-        to: p.address,
-        amount: p.amount,
-        memo: p.memo,
-      });
+      const { hash, status } = await send({ to: p.address, amount: p.amount, memo: p.memo });
       replaceLast({
         role: "assistant",
         hash,
         content:
           `Payment ${status === "Success" ? "confirmed ✅" : "submitted ⏳"}\n\n` +
-          `Recipient: ${p.recipient}\n` +
-          `Amount: ${p.amount} USDC` +
+          `Recipient: ${p.recipient}\nAmount: ${p.amount} USDC` +
           (p.memo ? `\nMemo: ${p.memo}` : ""),
       });
       onSent?.();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Payment failed ❌";
-      replaceLast({ role: "assistant", content: msg });
+      replaceLast({ role: "assistant", content: e instanceof Error ? e.message : "Payment failed ❌" });
     } finally {
       setLoading(false);
     }
@@ -114,10 +108,7 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
             <div className="font-bold mb-2">{msg.role === "user" ? "You" : "AI"}</div>
             <div className="whitespace-pre-wrap">{msg.content}</div>
             {msg.hash && (
-              <a
-                href={`/explorer/${msg.hash}`}
-                className="mt-3 inline-block text-sm text-blue-300 break-all underline"
-              >
+              <a href={`/explorer/${msg.hash}`} className="mt-3 inline-block text-sm text-blue-300 break-all underline">
                 View transaction →
               </a>
             )}
@@ -125,7 +116,6 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
         ))}
       </div>
 
-      {/* Confirmation step */}
       {pending && (
         <div className="mb-6 flex gap-3">
           <button
@@ -137,21 +127,14 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
           >
             Cancel
           </button>
-          <button
-            onClick={confirmSend}
-            disabled={loading}
-            className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold disabled:opacity-40"
-          >
+          <button onClick={confirmSend} disabled={loading} className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold disabled:opacity-40">
             Confirm &amp; Send
           </button>
         </div>
       )}
 
       {!authenticated ? (
-        <button
-          onClick={login}
-          className="w-full bg-orange-500 rounded-xl py-4 font-semibold"
-        >
+        <button onClick={login} className="w-full bg-orange-500 rounded-xl py-4 font-semibold">
           Login to send
         </button>
       ) : (
@@ -164,11 +147,7 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
             className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 outline-none"
             disabled={loading || !!pending}
           />
-          <button
-            disabled={loading || !!pending}
-            onClick={handleParse}
-            className="bg-orange-500 px-8 rounded-xl font-semibold disabled:opacity-40"
-          >
+          <button disabled={loading || !!pending} onClick={handleParse} className="bg-orange-500 px-8 rounded-xl font-semibold disabled:opacity-40">
             {loading ? "…" : "Send"}
           </button>
         </div>

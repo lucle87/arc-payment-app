@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useContacts } from "@/lib/useContacts";
 import { useSendUsdc } from "@/lib/useSendUsdc";
 
 type Parsed = { recipient: string; address: string; amount: string; memo: string };
@@ -16,6 +17,7 @@ type Phase =
 
 export default function AISendForm({ onSent }: { onSent?: () => void }) {
   const { authenticated, login } = usePrivy();
+  const { resolveByName } = useContacts();
   const { send } = useSendUsdc();
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
@@ -31,19 +33,28 @@ export default function AISendForm({ onSent }: { onSent?: () => void }) {
         body: JSON.stringify({ text }),
       });
       const data = await res.json();
-      if (data.success) {
-        setPhase({
-          status: "review",
-          parsed: {
-            recipient: data.recipient,
-            address: data.address,
-            amount: data.amount,
-            memo: data.memo ?? "",
-          },
-        });
-      } else {
+      if (!data.success) {
         setPhase({ status: "error", message: data.error });
+        return;
       }
+      // Resolve the contact name -> address on the client (localStorage).
+      const contact = resolveByName(data.recipient);
+      if (!contact) {
+        setPhase({
+          status: "error",
+          message: `Contact "${data.recipient}" not found. Add them in Contacts.`,
+        });
+        return;
+      }
+      setPhase({
+        status: "review",
+        parsed: {
+          recipient: contact.name,
+          address: contact.address,
+          amount: data.amount,
+          memo: data.memo ?? "",
+        },
+      });
     } catch {
       setPhase({ status: "error", message: "Network error" });
     }
@@ -52,17 +63,12 @@ export default function AISendForm({ onSent }: { onSent?: () => void }) {
   async function confirmSend(parsed: Parsed) {
     setPhase({ status: "sending" });
     try {
-      const { hash, status } = await send({
-        to: parsed.address,
-        amount: parsed.amount,
-        memo: parsed.memo,
-      });
+      const { hash, status } = await send({ to: parsed.address, amount: parsed.amount, memo: parsed.memo });
       setPhase({ status: "success", hash, txStatus: status });
       setText("");
       onSent?.();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Payment failed";
-      setPhase({ status: "error", message: msg });
+      setPhase({ status: "error", message: e instanceof Error ? e.message : "Payment failed" });
     }
   }
 
@@ -84,7 +90,6 @@ export default function AISendForm({ onSent }: { onSent?: () => void }) {
             placeholder="Send 0.1 USDC to Alice for dinner 🍕"
             className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
           />
-
           <button
             disabled={phase.status === "parsing" || !text.trim()}
             onClick={parse}
@@ -101,16 +106,10 @@ export default function AISendForm({ onSent }: { onSent?: () => void }) {
                 {phase.parsed.memo && <div className="text-zinc-400">Memo: {phase.parsed.memo}</div>}
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setPhase({ status: "idle" })}
-                  className="flex-1 rounded-xl border border-zinc-700 py-3"
-                >
+                <button onClick={() => setPhase({ status: "idle" })} className="flex-1 rounded-xl border border-zinc-700 py-3">
                   Cancel
                 </button>
-                <button
-                  onClick={() => confirmSend(phase.parsed)}
-                  className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold"
-                >
+                <button onClick={() => confirmSend(phase.parsed)} className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold">
                   Confirm &amp; Send
                 </button>
               </div>
