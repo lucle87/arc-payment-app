@@ -6,6 +6,7 @@ import {
   createWalletClient,
   custom,
   parseUnits,
+  formatUnits,
   getAddress,
   erc20Abi,
   type Address,
@@ -13,7 +14,12 @@ import {
 import { arcTestnet } from "viem/chains";
 import { ARC_USDC_ADDRESS, USDC_DECIMALS, publicClient } from "@/lib/chain";
 
-export type SendResult = { hash: string; status: "Success" | "Failed" | "Pending" };
+export type SendResult = {
+  hash: string;
+  status: "Success" | "Failed" | "Pending";
+  seconds: number;
+  fee: string | null; // gas fee in USDC (Arc pays gas in USDC)
+};
 
 function normalize(value: string): Address {
   return getAddress(value.toLowerCase());
@@ -26,15 +32,18 @@ export function useSendUsdc() {
     to,
     amount,
     memo,
+    silent,
   }: {
     to: string;
     amount: string;
     memo?: string;
+    silent?: boolean;
   }): Promise<SendResult> {
     const embedded = wallets.find((w) => w.walletClientType === "privy");
     if (!embedded) throw new Error("No wallet found. Please log in first.");
 
-    const toastId = toast.loading(`Sending ${amount} USDC…`);
+    const toastId = silent ? undefined : toast.loading(`Sending ${amount} USDC…`);
+    const start = Date.now();
     try {
       try {
         await embedded.switchChain(arcTestnet.id);
@@ -63,11 +72,24 @@ export function useSendUsdc() {
       });
 
       let status: SendResult["status"] = "Pending";
+      let seconds = 0;
+      let fee: string | null = null;
+
       try {
         const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
         status = receipt.status === "success" ? "Success" : "Failed";
+        seconds = (Date.now() - start) / 1000;
+        try {
+          if (receipt.gasUsed && receipt.effectiveGasPrice) {
+            const feeUnits = receipt.gasUsed * receipt.effectiveGasPrice;
+            const dec = arcTestnet.nativeCurrency?.decimals ?? 18;
+            fee = formatUnits(feeUnits, dec);
+          }
+        } catch {
+          // fee optional
+        }
       } catch {
-        // leave Pending
+        seconds = (Date.now() - start) / 1000;
       }
 
       try {
@@ -80,13 +102,21 @@ export function useSendUsdc() {
         // non-fatal
       }
 
-      if (status === "Success") toast.success("Payment confirmed ✅", { id: toastId });
-      else if (status === "Failed") toast.error("Transaction failed", { id: toastId });
-      else toast.message("Payment submitted ⏳", { id: toastId });
+      if (!silent && toastId !== undefined) {
+        if (status === "Success") {
+          toast.success(`Confirmed in ${seconds.toFixed(1)}s ⚡`, { id: toastId });
+        } else if (status === "Failed") {
+          toast.error("Transaction failed", { id: toastId });
+        } else {
+          toast.message("Payment submitted ⏳", { id: toastId });
+        }
+      }
 
-      return { hash, status };
+      return { hash, status, seconds, fee };
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Payment failed", { id: toastId });
+      if (!silent && toastId !== undefined) {
+        toast.error(e instanceof Error ? e.message : "Payment failed", { id: toastId });
+      }
       throw e;
     }
   }

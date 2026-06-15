@@ -10,25 +10,43 @@ export default function ReceivePage() {
   const { wallets } = useWallets();
   const [copied, setCopied] = useState(false);
 
+  // request builder
+  const [amount, setAmount] = useState("");
+  const [memo, setMemo] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+
   const address = useMemo(
     () => wallets.find((w) => w.walletClientType === "privy")?.address,
     [wallets]
   );
 
-  async function copy() {
-    if (!address) return;
+  const requestLink = useMemo(() => {
+    if (!address) return "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const params = new URLSearchParams({ to: address });
+    if (Number(amount) > 0) params.set("amount", amount);
+    if (memo.trim()) params.set("memo", memo.trim());
+    return `${origin}/send?${params.toString()}`;
+  }, [address, amount, memo]);
+
+  async function copyText(text: string, which: "addr" | "link") {
     try {
-      await navigator.clipboard.writeText(address);
+      await navigator.clipboard.writeText(text);
     } catch {
       const ta = document.createElement("textarea");
-      ta.value = address;
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    if (which === "addr") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } else {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    }
   }
 
   return (
@@ -36,7 +54,7 @@ export default function ReceivePage() {
       <div className="max-w-xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-bold mb-3 text-gradient">Receive</h1>
         <p className="text-zinc-400 text-lg mb-10">
-          Share your address or QR code to get paid in USDC.
+          Share your address, or create a payment request link.
         </p>
 
         {!ready ? null : !authenticated ? (
@@ -46,29 +64,69 @@ export default function ReceivePage() {
         ) : !address ? (
           <p className="text-zinc-500">Loading your wallet…</p>
         ) : (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 flex flex-col items-center text-center">
-            <div className="mb-5">
-              <Avatar address={address} size={56} />
+          <div className="space-y-8">
+            {/* Address + QR */}
+            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 flex flex-col items-center text-center">
+              <div className="mb-5">
+                <Avatar address={address} size={56} />
+              </div>
+              <div className="rounded-2xl bg-white p-4">
+                <QRCodeSVG value={address} size={200} bgColor="#ffffff" fgColor="#0a0a0a" />
+              </div>
+              <div className="mt-6 font-mono text-sm text-zinc-300 break-all">{address}</div>
+              <button
+                onClick={() => copyText(address, "addr")}
+                className="mt-6 w-full rounded-xl bg-orange-500 py-3 font-semibold hover:bg-orange-400"
+              >
+                {copied ? "Copied! ✓" : "Copy address"}
+              </button>
             </div>
 
-            <div className="rounded-2xl bg-white p-4">
-              <QRCodeSVG value={address} size={220} bgColor="#ffffff" fgColor="#0a0a0a" />
+            {/* Request a specific amount */}
+            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+              <h2 className="text-xl font-semibold mb-4">Request a payment</h2>
+              <div className="flex flex-col gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Amount (USDC)"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                />
+                <input
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  placeholder="What's it for? (optional)"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                />
+              </div>
+
+              {Number(amount) > 0 && (
+                <div className="mt-5 flex flex-col items-center text-center">
+                  <div className="rounded-2xl bg-white p-3">
+                    <QRCodeSVG value={requestLink} size={160} bgColor="#ffffff" fgColor="#0a0a0a" />
+                  </div>
+                  <div className="mt-4 text-xs text-zinc-500 break-all">{requestLink}</div>
+                  <button
+                    onClick={() => copyText(requestLink, "link")}
+                    className="mt-4 w-full rounded-xl bg-orange-500 py-3 font-semibold hover:bg-orange-400"
+                  >
+                    {linkCopied ? "Link copied! ✓" : "Copy request link"}
+                  </button>
+                  <p className="mt-3 text-xs text-zinc-500">
+                    Anyone who opens this link gets a pre-filled payment to you.
+                  </p>
+                </div>
+              )}
             </div>
-
-            <div className="mt-6 font-mono text-sm text-zinc-300 break-all">{address}</div>
-
-            <button
-              onClick={copy}
-              className="mt-6 w-full rounded-xl bg-orange-500 py-3 font-semibold hover:bg-orange-400"
-            >
-              {copied ? "Copied! ✓" : "Copy address"}
-            </button>
 
             <a
               href="https://faucet.circle.com"
               target="_blank"
               rel="noreferrer"
-              className="mt-3 text-sm text-zinc-400 hover:text-orange-400"
+              className="block text-center text-sm text-zinc-400 hover:text-orange-400"
             >
               💧 Need test USDC? Use the faucet →
             </a>

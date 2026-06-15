@@ -8,7 +8,7 @@ import { useSendUsdc } from "@/lib/useSendUsdc";
 type Result =
   | { status: "idle" }
   | { status: "sending" }
-  | { status: "success"; hash: string; txStatus: string }
+  | { status: "success"; hash: string; txStatus: string; seconds: number }
   | { status: "error"; message: string };
 
 const HEX = /^0x[0-9a-fA-F]{40}$/;
@@ -24,9 +24,15 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<Result>({ status: "idle" });
 
+  // Prefill from a payment-request link: /send?to=..&amount=..&memo=..
   useEffect(() => {
-    const to = new URLSearchParams(window.location.search).get("to");
+    const q = new URLSearchParams(window.location.search);
+    const to = q.get("to");
+    const amt = q.get("amount");
+    const m = q.get("memo");
     if (to && HEX.test(to)) setAddress(to);
+    if (amt && Number(amt) > 0) setAmount(amt);
+    if (m) setMemo(m);
   }, []);
 
   const amountNum = Number(amount);
@@ -38,8 +44,8 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
   async function doSend() {
     setResult({ status: "sending" });
     try {
-      const { hash, status } = await send({ to: address, amount, memo });
-      setResult({ status: "success", hash, txStatus: status });
+      const { hash, status, seconds } = await send({ to: address, amount, memo });
+      setResult({ status: "success", hash, txStatus: status, seconds });
       setAddress("");
       setAmount("");
       setMemo("");
@@ -84,9 +90,7 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
               placeholder="…or paste an address (0x…)"
               className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 font-mono text-sm"
             />
-            {address && !addressValid && (
-              <p className="mt-2 text-sm text-red-400">Invalid address</p>
-            )}
+            {address && !addressValid && <p className="mt-2 text-sm text-red-400">Invalid address</p>}
           </div>
 
           <div>
@@ -100,9 +104,7 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
               placeholder="1"
               className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
             />
-            {amount && !amountValid && (
-              <p className="mt-2 text-sm text-red-400">Enter a positive amount</p>
-            )}
+            {amount && !amountValid && <p className="mt-2 text-sm text-red-400">Enter a positive amount</p>}
           </div>
 
           <div>
@@ -148,7 +150,9 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
           {result.status === "success" && (
             <div className="rounded-2xl bg-zinc-900 p-4">
               <p className="text-green-400 font-semibold mb-1">
-                Payment {result.txStatus === "Success" ? "confirmed ✅" : "submitted ⏳"}
+                {result.txStatus === "Success"
+                  ? `Confirmed in ${result.seconds.toFixed(1)}s ⚡`
+                  : "Payment submitted ⏳"}
               </p>
               {result.hash && (
                 <a href={`/explorer/${result.hash}`} className="text-sm text-blue-400 break-all underline">

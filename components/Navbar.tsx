@@ -8,6 +8,7 @@ const LINKS: [string, string][] = [
   ["/", "Home"],
   ["/send", "Send"],
   ["/receive", "Receive"],
+  ["/agent", "AI Agent"],
   ["/explorer", "History"],
   ["/contacts", "Contacts"],
 ];
@@ -26,7 +27,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden sm:flex items-center gap-6 text-sm">
+        <div className="hidden md:flex items-center gap-6 text-sm">
           {LINKS.map(([href, label]) => {
             const active = pathname === href;
             return (
@@ -46,7 +47,7 @@ export default function Navbar() {
             href="https://faucet.circle.com"
             target="_blank"
             rel="noreferrer"
-            className="hidden md:inline-flex items-center gap-1 rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 hover:border-orange-500 hover:text-orange-400 transition"
+            className="hidden lg:inline-flex items-center gap-1 rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 hover:border-orange-500 hover:text-orange-400 transition"
           >
             💧 Faucet
           </a>
