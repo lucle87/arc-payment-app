@@ -12,6 +12,8 @@ type Row = {
   memo: string;
   state: "idle" | "sending" | "done" | "failed";
   hash?: string;
+  seconds?: number;
+  fee?: string | null;
 };
 
 type Phase =
@@ -85,13 +87,13 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
     for (let i = 0; i < rows.length; i++) {
       setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, state: "sending" } : r)));
       try {
-        const { hash } = await send({
+        const { hash, seconds, fee } = await send({
           to: rows[i].address,
           amount: rows[i].amount,
           memo: rows[i].memo,
           silent: true,
         });
-        setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, state: "done", hash } : r)));
+        setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, state: "done", hash, seconds, fee } : r)));
       } catch {
         setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, state: "failed" } : r)));
       }
@@ -149,13 +151,13 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-orange-400 font-semibold">{r.amount} USDC</span>
-                      <span className="text-sm w-16 text-right">
+                      <span className="text-sm w-20 text-right">
                         {r.state === "idle" && <span className="text-zinc-600">—</span>}
                         {r.state === "sending" && <span className="text-zinc-400">…</span>}
                         {r.state === "done" &&
                           (r.hash ? (
                             <a href={`/explorer/${r.hash}`} className="text-green-400 underline">
-                              ✅
+                              {r.seconds != null ? `✅ ${r.seconds.toFixed(1)}s` : "✅"}
                             </a>
                           ) : (
                             <span className="text-green-400">✅</span>
@@ -185,7 +187,19 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
               )}
 
               {phase.status === "running" && sentCount + rows.filter((r) => r.state === "failed").length === rows.length && (
-                <p className="mt-4 text-center text-green-400 font-semibold">Done — {sentCount}/{rows.length} sent ✅</p>
+                <div className="mt-4 rounded-xl border border-green-500/20 bg-green-500/5 p-3 text-center">
+                  <p className="text-green-400 font-bold">⚡ Sent {sentCount}/{rows.length} on Arc</p>
+                  {(() => {
+                    const done = rows.filter((r) => r.state === "done" && r.seconds != null);
+                    const avg = done.length ? done.reduce((s, r) => s + (r.seconds || 0), 0) / done.length : 0;
+                    const feeSum = rows.reduce((s, r) => s + Number(r.fee || 0), 0);
+                    return (
+                      <p className="text-xs text-zinc-400 mt-1">
+                        avg {avg.toFixed(1)}s each{feeSum > 0 ? ` · total fee ≈ ${feeSum.toFixed(4)} USDC` : ""}
+                      </p>
+                    );
+                  })()}
+                </div>
               )}
             </div>
           )}

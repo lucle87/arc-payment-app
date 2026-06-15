@@ -8,7 +8,7 @@ import { useSendUsdc } from "@/lib/useSendUsdc";
 type Result =
   | { status: "idle" }
   | { status: "sending" }
-  | { status: "success"; hash: string; txStatus: string; seconds: number }
+  | { status: "success"; hash: string; txStatus: string; seconds: number; fee: string | null }
   | { status: "error"; message: string };
 
 const HEX = /^0x[0-9a-fA-F]{40}$/;
@@ -44,8 +44,8 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
   async function doSend() {
     setResult({ status: "sending" });
     try {
-      const { hash, status, seconds } = await send({ to: address, amount, memo });
-      setResult({ status: "success", hash, txStatus: status, seconds });
+      const { hash, status, seconds, fee } = await send({ to: address, amount, memo });
+      setResult({ status: "success", hash, txStatus: status, seconds, fee });
       setAddress("");
       setAmount("");
       setMemo("");
@@ -148,12 +148,17 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
           )}
 
           {result.status === "success" && (
-            <div className="rounded-2xl bg-zinc-900 p-4">
-              <p className="text-green-400 font-semibold mb-1">
+            <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
+              <p className="text-green-400 font-bold text-lg mb-1">
                 {result.txStatus === "Success"
-                  ? `Confirmed in ${result.seconds.toFixed(1)}s ⚡`
-                  : "Payment submitted ⏳"}
+                  ? `⚡ Confirmed in ${result.seconds.toFixed(1)}s`
+                  : `Submitted in ${result.seconds.toFixed(1)}s ⏳`}
               </p>
+              {result.fee && Number(result.fee) > 0 && (
+                <p className="text-xs text-zinc-400 mb-2">
+                  Network fee ≈ {Number(result.fee).toFixed(4)} USDC · paid in USDC on Arc
+                </p>
+              )}
               {result.hash && (
                 <a href={`/explorer/${result.hash}`} className="text-sm text-blue-400 break-all underline">
                   {result.hash}
