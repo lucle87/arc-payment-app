@@ -5,13 +5,29 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   color: #ffffff;
   min-height: 100vh;
-  background-color: #09090b;
+  position: relative;
+
+  /* Deep navy gradient, like the Arc logo background */
+  background-color: #0a1322;
   background-image:
-    radial-gradient(55% 45% at 12% -5%, rgba(249, 115, 22, 0.13), transparent 60%),
-    radial-gradient(50% 40% at 100% 0%, rgba(249, 115, 22, 0.07), transparent 60%),
-    radial-gradient(75% 55% at 50% 115%, rgba(234, 88, 12, 0.06), transparent 60%);
+    radial-gradient(70% 55% at 50% 18%, rgba(70, 110, 190, 0.30), transparent 60%),
+    linear-gradient(180deg, #14274a 0%, #0c1830 55%, #070d18 100%);
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+/* Faded logo watermark behind all content */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url("/logo.png");
+  background-repeat: no-repeat;
+  background-position: center 46%;
+  background-size: min(140vmin, 1200px);
+  opacity: 0.07;
+  pointer-events: none;
 }
 
 h1, h2, h3, .font-display {
@@ -20,28 +36,40 @@ h1, h2, h3, .font-display {
 
 html { scroll-behavior: smooth; }
 
+/* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+::-webkit-scrollbar-thumb { background: #1e2a44; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #2c3a5c; }
 
+/* ===== Lift dark surfaces so cards sit nicely on the blue ===== */
+[class*="bg-zinc-900"],
+[class*="bg-zinc-950"] {
+  background-image: linear-gradient(180deg, rgba(150, 180, 240, 0.06), rgba(255, 255, 255, 0) 140px);
+  border-color: rgba(150, 175, 230, 0.14);
+}
+
+/* ===== Cards: depth + glow on hover ===== */
 [class*="rounded-3xl"] {
   transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
 }
 [class*="rounded-3xl"]:hover {
-  box-shadow: 0 18px 50px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(249,115,22,.12);
+  box-shadow: 0 18px 50px -20px rgba(0, 0, 0, .75), 0 0 0 1px rgba(249, 115, 22, .16);
+  border-color: rgba(249, 115, 22, .26);
 }
 
+/* ===== Button micro-interaction ===== */
 button { transition: transform .08s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
 button:active:not(:disabled) { transform: scale(.97); }
 
+/* ===== Helpers ===== */
 .text-gradient {
   background: linear-gradient(135deg, #ffffff 0%, #fdba74 55%, #f97316 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.btn-glow { box-shadow: 0 10px 30px -8px rgba(249,115,22,.45); }
+.btn-glow { box-shadow: 0 10px 30px -8px rgba(249, 115, 22, .45); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

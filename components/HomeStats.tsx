@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useWallets } from "@privy-io/react-auth";
-import { contacts } from "@/lib/contacts";
+import { useContacts } from "@/lib/useContacts";
 import { getUsdcBalance } from "@/lib/chain";
 
 type Tx = { amount: string; status: string };
 
 export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: number }) {
   const { wallets } = useWallets();
+  const { contacts } = useContacts();
   const [balance, setBalance] = useState<string | null>(null);
   const [txs, setTxs] = useState<Tx[]>([]);
 
