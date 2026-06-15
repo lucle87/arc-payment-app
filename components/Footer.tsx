@@ -4,11 +4,26 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-5 md:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-zinc-400">
         <div className="flex items-center gap-2">
           <span>Built on</span>
-          <span className="font-semibold text-orange-400">Arc</span>
+          <a
+            href="https://www.arc.io/"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-orange-400 hover:text-orange-300 transition"
+          >
+            Arc
+          </a>
           <span>🟠</span>
         </div>
 
         <div className="flex items-center gap-6">
+          <a
+            href="https://www.arc.io/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-orange-400 transition"
+          >
+            About Arc
+          </a>
           <a
             href="https://faucet.circle.com"
             target="_blank"
