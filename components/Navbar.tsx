@@ -6,6 +6,7 @@ import WalletButton from "./WalletButton";
 
 const LINKS: [string, string][] = [
   ["/", "Home"],
+  ["/wallet", "Wallet"],
   ["/send", "Send"],
   ["/receive", "Receive"],
   ["/agent", "AI Agent"],
@@ -27,7 +28,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-6 text-sm">
+        <div className="hidden md:flex items-center gap-5 text-sm">
           {LINKS.map(([href, label]) => {
             const active = pathname === href;
             return (
