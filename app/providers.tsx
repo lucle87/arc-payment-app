@@ -13,7 +13,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         defaultChain: arcTestnet,
         supportedChains: [arcTestnet],
         embeddedWallets: {
-          createOnLogin: "users-without-wallets",
+          // Newer Privy nests this under `ethereum`.
+          ethereum: {
+            createOnLogin: "users-without-wallets",
+          },
           // false = no extra Privy popup; the app shows its own confirm step.
           showWalletUIs: false,
         },

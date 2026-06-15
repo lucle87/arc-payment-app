@@ -50,7 +50,7 @@ export default function TransactionChart({
                   border: "1px solid #27272a",
                   borderRadius: 12,
                 }}
-                formatter={(v: number) => [`${v} USDC`, "Volume"]}
+                formatter={(v) => [`${Number(v)} USDC`, "Volume"]}
               />
               <Bar dataKey="volume" fill="#f97316" radius={[6, 6, 0, 0]} />
             </BarChart>
