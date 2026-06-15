@@ -1,198 +1,89 @@
-import fs from "fs";
-import path from "path";
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { getTransactions } from "@/lib/store";
+import { explorerTxUrl } from "@/lib/chain";
+import { contactName } from "@/lib/contacts";
+
+export const dynamic = "force-dynamic";
 
 export default async function TransactionPage({
   params,
 }: {
   params: Promise<{ hash: string }>;
 }) {
-
-  const { hash } =
-    await params;
-
-  const filePath =
-    path.join(
-      process.cwd(),
-      "data",
-      "transactions.json"
-    );
-
-  const fileData =
-    fs.readFileSync(
-      filePath,
-      "utf8"
-    );
-
-  const transactions =
-    JSON.parse(
-      fileData
-    );
-
-  const tx =
-    transactions.find(
-      (t: any) =>
-        t.hash === hash
-    );
+  const { hash } = await params;
+  const transactions = await getTransactions();
+  const tx = transactions.find((t) => t.hash === hash);
 
   if (!tx) {
-
     return (
-
       <main className="min-h-screen bg-black text-white p-10">
-
-        Transaction not found
-
+        <div className="max-w-4xl mx-auto">
+          <Link href="/explorer" className="text-blue-400">
+            ← Back
+          </Link>
+          <p className="mt-8 text-zinc-400">Transaction not found.</p>
+        </div>
       </main>
-
     );
-
   }
 
+  const rows: [string, ReactNode][] = [
+    ["Hash", <span className="break-all">{tx.hash}</span>],
+    [
+      "Recipient",
+      <span className="break-all">
+        {contactName(tx.address) ? `${contactName(tx.address)} · ` : ""}
+        {tx.address}
+      </span>,
+    ],
+    ["Amount", `${tx.amount} USDC`],
+    ["Memo", tx.memo || "—"],
+    ["Timestamp", tx.timestamp ? new Date(tx.timestamp).toLocaleString() : "—"],
+    ["Status", tx.status],
+  ];
+
+  const external = explorerTxUrl(tx.hash);
+
   return (
-
     <main className="min-h-screen bg-black text-white p-10">
-
       <div className="max-w-4xl mx-auto">
-
-        <Link
-
-          href="/explorer"
-
-          className="text-blue-400"
-
-        >
-
+        <Link href="/explorer" className="text-blue-400">
           ← Back
-
         </Link>
 
-        <h1 className="text-5xl font-bold mt-8 mb-10">
+        <h1 className="text-5xl font-bold mt-8 mb-10">Transaction Detail 🟠</h1>
 
-          Transaction Detail 🟠
+        <div className="bg-zinc-900 rounded-2xl p-8 space-y-6 shadow">
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <h2 className="text-zinc-400 mb-2">{label}</h2>
+              <p
+                className={
+                  label === "Memo"
+                    ? "text-orange-500 font-bold"
+                    : label === "Status"
+                    ? "font-bold"
+                    : ""
+                }
+              >
+                {value}
+              </p>
+            </div>
+          ))}
 
-        </h1>
-
-        <div className="bg-zinc-900 rounded-2xl p-8 space-y-8 shadow">
-
-          <div>
-
-            <h2 className="text-zinc-400 mb-2">
-
-              Hash
-
-            </h2>
-
-            <p className="break-all">
-
-              {tx.hash}
-
-            </p>
-
-          </div>
-
-          <div>
-
-            <h2 className="text-zinc-400 mb-2">
-
-              Address
-
-            </h2>
-
-            <p>
-
-              {tx.address}
-
-            </p>
-
-          </div>
-
-          <div>
-
-            <h2 className="text-zinc-400 mb-2">
-
-              Amount
-
-            </h2>
-
-            <p>
-
-              {tx.amount}
-
-              {" "}
-
-              USDC
-
-            </p>
-
-          </div>
-
-          <div>
-
-            <h2 className="text-zinc-400 mb-2">
-
-              Memo
-
-            </h2>
-
-            <p className="text-orange-500 font-bold">
-
-              {tx.memo}
-
-            </p>
-
-          </div>
-
-          <div>
-
-            <h2 className="text-zinc-400 mb-2">
-
-              Timestamp
-
-            </h2>
-
-            <p>
-
-              {
-
-                tx.timestamp ||
-
-                "-"
-
-              }
-
-            </p>
-
-          </div>
-
-          <div>
-
-            <h2 className="text-zinc-400 mb-2">
-
-              Status
-
-            </h2>
-
-            <p className="text-green-500 font-bold">
-
-              {
-
-                tx.status ||
-
-                "Success"
-
-              }
-
-            </p>
-
-          </div>
-
+          {external && (
+            <a
+              href={external}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-blue-400 underline"
+            >
+              View on Arc explorer →
+            </a>
+          )}
         </div>
-
       </div>
-
     </main>
-
   );
-
 }

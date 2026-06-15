@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import WalletButton from "./WalletButton";
 
 export default function Navbar() {
   return (
@@ -43,6 +44,9 @@ export default function Navbar() {
           >
             Contacts
           </Link>
+
+          {/* Login / wallet button */}
+          <WalletButton />
 
         </div>
 
