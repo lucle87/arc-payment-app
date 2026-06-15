@@ -1,6 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
+import { Toaster } from "sonner";
 import { arcTestnet } from "viem/chains";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -13,16 +14,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         defaultChain: arcTestnet,
         supportedChains: [arcTestnet],
         embeddedWallets: {
-          // Newer Privy nests this under `ethereum`.
-          ethereum: {
-            createOnLogin: "users-without-wallets",
-          },
-          // false = no extra Privy popup; the app shows its own confirm step.
+          ethereum: { createOnLogin: "users-without-wallets" },
           showWalletUIs: false,
         },
       }}
     >
       {children}
+      <Toaster richColors theme="dark" position="top-center" />
     </PrivyProvider>
   );
 }

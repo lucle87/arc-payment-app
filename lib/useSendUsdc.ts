@@ -1,6 +1,7 @@
 "use client";
 
 import { useWallets } from "@privy-io/react-auth";
+import { toast } from "sonner";
 import {
   createWalletClient,
   custom,
@@ -33,54 +34,61 @@ export function useSendUsdc() {
     const embedded = wallets.find((w) => w.walletClientType === "privy");
     if (!embedded) throw new Error("No wallet found. Please log in first.");
 
+    const toastId = toast.loading(`Sending ${amount} USDC…`);
     try {
-      await embedded.switchChain(arcTestnet.id);
-    } catch {
-      // ignore
-    }
+      try {
+        await embedded.switchChain(arcTestnet.id);
+      } catch {
+        // ignore
+      }
 
-    const provider = await embedded.getEthereumProvider();
-    const account = normalize(embedded.address);
-    const walletClient = createWalletClient({
-      account,
-      chain: arcTestnet,
-      transport: custom(provider),
-    });
-
-    const toAddr = normalize(to);
-    const value = parseUnits(amount, USDC_DECIMALS);
-
-    const hash = await walletClient.writeContract({
-      address: ARC_USDC_ADDRESS,
-      abi: erc20Abi,
-      functionName: "transfer",
-      args: [toAddr, value],
-      account,
-      chain: arcTestnet,
-    });
-
-    let status: SendResult["status"] = "Pending";
-    try {
-      const receipt = await publicClient.waitForTransactionReceipt({
-        hash,
-        timeout: 30_000,
+      const provider = await embedded.getEthereumProvider();
+      const account = normalize(embedded.address);
+      const walletClient = createWalletClient({
+        account,
+        chain: arcTestnet,
+        transport: custom(provider),
       });
-      status = receipt.status === "success" ? "Success" : "Failed";
-    } catch {
-      // leave Pending
-    }
 
-    try {
-      await fetch("/api/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hash, address: toAddr, amount, memo: memo ?? "", status }),
+      const toAddr = normalize(to);
+      const value = parseUnits(amount, USDC_DECIMALS);
+
+      const hash = await walletClient.writeContract({
+        address: ARC_USDC_ADDRESS,
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [toAddr, value],
+        account,
+        chain: arcTestnet,
       });
-    } catch {
-      // non-fatal
-    }
 
-    return { hash, status };
+      let status: SendResult["status"] = "Pending";
+      try {
+        const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
+        status = receipt.status === "success" ? "Success" : "Failed";
+      } catch {
+        // leave Pending
+      }
+
+      try {
+        await fetch("/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hash, address: toAddr, amount, memo: memo ?? "", status }),
+        });
+      } catch {
+        // non-fatal
+      }
+
+      if (status === "Success") toast.success("Payment confirmed ✅", { id: toastId });
+      else if (status === "Failed") toast.error("Transaction failed", { id: toastId });
+      else toast.message("Payment submitted ⏳", { id: toastId });
+
+      return { hash, status };
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Payment failed", { id: toastId });
+      throw e;
+    }
   }
 
   return { send };

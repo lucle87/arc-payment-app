@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Avatar from "./Avatar";
 
 type Tx = {
   hash: string;
@@ -11,11 +12,7 @@ type Tx = {
   status: string;
 };
 
-export default function RecentPayments({
-  refreshSignal = 0,
-}: {
-  refreshSignal?: number;
-}) {
+export default function RecentPayments({ refreshSignal = 0 }: { refreshSignal?: number }) {
   const [txs, setTxs] = useState<Tx[]>([]);
 
   useEffect(() => {
@@ -39,15 +36,16 @@ export default function RecentPayments({
               href={tx.hash ? `/explorer/${tx.hash}` : "#"}
               className="flex justify-between items-center border-b border-zinc-800 pb-4 hover:opacity-80"
             >
-              <div>
-                <div className="font-bold">
-                  {(tx.address ?? "").slice(0, 8)}…{(tx.address ?? "").slice(-6)}
-                </div>
-                <div className="text-zinc-400 text-sm">
-                  {tx.timestamp
-                    ? new Date(tx.timestamp).toLocaleString()
-                    : ""}
-                  {tx.status !== "Success" ? ` · ${tx.status}` : ""}
+              <div className="flex items-center gap-3">
+                <Avatar address={tx.address} size={36} />
+                <div>
+                  <div className="font-bold">
+                    {(tx.address ?? "").slice(0, 8)}…{(tx.address ?? "").slice(-6)}
+                  </div>
+                  <div className="text-zinc-400 text-sm">
+                    {tx.timestamp ? new Date(tx.timestamp).toLocaleString() : ""}
+                    {tx.status !== "Success" ? ` · ${tx.status}` : ""}
+                  </div>
                 </div>
               </div>
               <div className="text-green-400 font-bold">{tx.amount} USDC</div>

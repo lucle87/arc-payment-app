@@ -3,6 +3,7 @@
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useEffect, useMemo, useState } from "react";
 import { getUsdcBalance } from "@/lib/chain";
+import Avatar from "./Avatar";
 
 export default function WalletButton() {
   const { ready, authenticated, login, logout, createWallet, exportWallet } = usePrivy();
@@ -64,9 +65,9 @@ export default function WalletButton() {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-3 rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 hover:bg-zinc-800 hover:border-zinc-600 transition"
+        className="flex items-center gap-3 rounded-2xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 hover:bg-zinc-800 hover:border-zinc-600 transition"
       >
-        <span className="h-2.5 w-2.5 rounded-full bg-green-400 shrink-0" />
+        <Avatar address={address} size={32} />
         <span className="text-left leading-tight">
           <span className="block font-mono text-sm text-zinc-100">
             {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : creating ? "Creating…" : "Loading…"}
@@ -80,27 +81,21 @@ export default function WalletButton() {
 
       {open && address && (
         <>
-          {/* click-outside backdrop */}
           <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
-
           <div
             className="absolute right-0 mt-2 w-72 rounded-2xl border border-zinc-700 p-4 shadow-2xl z-[100]"
             style={{ backgroundColor: "#18181b" }}
           >
-            <div className="text-xs font-medium text-zinc-300 mb-1">Wallet address</div>
-            <div className="font-mono text-xs text-zinc-100 break-all mb-4">{address}</div>
+            <div className="flex items-center gap-3 mb-4">
+              <Avatar address={address} size={40} />
+              <div className="font-mono text-xs text-zinc-100 break-all">{address}</div>
+            </div>
 
             <button
               onClick={copyAddress}
               className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-400 mb-2"
             >
               {copied ? "Copied! ✓" : "Copy address"}
-            </button>
-            <button
-              onClick={() => exportWallet()}
-              className="w-full rounded-xl border border-zinc-600 py-2.5 text-sm text-zinc-100 hover:bg-zinc-800 mb-2"
-            >
-              Export private key
             </button>
             <a
               href="https://faucet.circle.com"
@@ -110,6 +105,12 @@ export default function WalletButton() {
             >
               💧 Get test USDC
             </a>
+            <button
+              onClick={() => exportWallet()}
+              className="w-full rounded-xl border border-zinc-600 py-2.5 text-sm text-zinc-100 hover:bg-zinc-800 mb-2"
+            >
+              Export private key
+            </button>
             <button
               onClick={logout}
               className="w-full rounded-xl border border-zinc-700 py-2.5 text-sm text-zinc-400 hover:bg-zinc-800"

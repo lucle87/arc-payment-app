@@ -1,16 +1,8 @@
 @import "tailwindcss";
 
-/* ============================================================
-   ARC Payment App — global styles
-   (Tailwind v4. The @import above MUST stay on the first line.)
-   ============================================================ */
-
-html {
-  scroll-behavior: smooth;
-}
-
-/* --- Ambient background: charcoal base + soft orange glows --- */
+/* ===== Typography ===== */
 body {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   color: #ffffff;
   min-height: 100vh;
   background-color: #09090b;
@@ -22,51 +14,36 @@ body {
   background-attachment: fixed;
 }
 
-/* --- Slimmer scrollbar --- */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+h1, h2, h3, .font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
 }
 
-/* --- Cards: gentle depth + orange ring on hover (any rounded-3xl block) --- */
+html { scroll-behavior: smooth; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
 [class*="rounded-3xl"] {
-  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
 }
 [class*="rounded-3xl"]:hover {
-  box-shadow:
-    0 18px 50px -20px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(249, 115, 22, 0.12);
+  box-shadow: 0 18px 50px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(249,115,22,.12);
 }
 
-/* --- Gradient text (class="text-gradient") --- */
+button { transition: transform .08s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
+button:active:not(:disabled) { transform: scale(.97); }
+
 .text-gradient {
   background: linear-gradient(135deg, #ffffff 0%, #fdba74 55%, #f97316 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+.btn-glow { box-shadow: 0 10px 30px -8px rgba(249,115,22,.45); }
 
-/* --- Soft glow under primary buttons (class="btn-glow") --- */
-.btn-glow {
-  box-shadow: 0 10px 30px -8px rgba(249, 115, 22, 0.45);
-}
-
-/* --- Respect reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  [class*="rounded-3xl"] {
-    transition: none;
-  }
+  html { scroll-behavior: auto; }
+  [class*="rounded-3xl"], button { transition: none; }
 }
