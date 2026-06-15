@@ -1,9 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import ChatPayment from "@/components/ChatPayment";
-import RecentPayments from "@/components/RecentPayments";
-import HomeStats from "@/components/HomeStats";
+import Link from "next/link";
 
 const FEATURES: { icon: string; title: string; body: string }[] = [
   {
@@ -29,13 +24,10 @@ const FEATURES: { icon: string; title: string; body: string }[] = [
 ];
 
 export default function Home() {
-  const [refresh, setRefresh] = useState(0);
-  const onSent = () => setRefresh((n) => n + 1);
-
   return (
     <main className="min-h-screen text-white">
       {/* ===== Hero ===== */}
-      <section className="max-w-7xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-10">
+      <section className="max-w-7xl mx-auto px-5 md:px-8 pt-16 md:pt-28 pb-12">
         <div className="max-w-3xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-green-500/40 bg-green-500/10 px-4 py-1.5 text-sm font-medium text-green-300 mb-6">
             <span className="relative flex h-2.5 w-2.5">
@@ -51,15 +43,15 @@ export default function Home() {
           </h1>
           <p className="text-zinc-300 text-lg md:text-2xl mb-8 max-w-2xl">
             A stablecoin wallet that feels like a normal app. Log in with email, get a wallet,
-            and send or split USDC with one sentence — settled in under a second on Arc.
+            and send or split USDC with one sentence, settled in under a second on Arc.
           </p>
           <div className="flex flex-wrap gap-4">
-            <a
-              href="#app"
+            <Link
+              href="/send"
               className="rounded-xl bg-orange-500 px-7 py-3.5 font-semibold hover:bg-orange-400 btn-glow"
             >
               Launch app
-            </a>
+            </Link>
             <a
               href="https://faucet.circle.com"
               target="_blank"
@@ -73,7 +65,7 @@ export default function Home() {
       </section>
 
       {/* ===== Feature cards ===== */}
-      <section className="max-w-7xl mx-auto px-5 md:px-8 pb-16">
+      <section className="max-w-7xl mx-auto px-5 md:px-8 pb-24">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {FEATURES.map((f) => (
             <div key={f.title} className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
@@ -83,18 +75,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </section>
-
-      {/* ===== The app ===== */}
-      <section id="app" className="max-w-7xl mx-auto px-5 md:px-8 pb-20 scroll-mt-24">
-        <div className="mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2">Your wallet</h2>
-          <p className="text-zinc-400">Live balance, AI payments, and recent activity on Arc testnet.</p>
-        </div>
-
-        <HomeStats refreshSignal={refresh} />
-        <ChatPayment onSent={onSent} />
-        <RecentPayments refreshSignal={refresh} />
       </section>
     </main>
   );
