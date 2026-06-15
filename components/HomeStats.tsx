@@ -27,11 +27,15 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
   }, [address, refreshSignal]);
 
   useEffect(() => {
-    fetch("/api/transactions", { cache: "no-store" })
+    if (!address) {
+      setTxs([]);
+      return;
+    }
+    fetch(`/api/transactions?owner=${address}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => d.success && setTxs(d.transactions))
       .catch(() => {});
-  }, [refreshSignal]);
+  }, [address, refreshSignal]);
 
   const volume = txs
     .filter((t) => t.status === "Success")
@@ -43,9 +47,7 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
       value:
         address && balance != null
           ? `${Number(balance).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`
-          : address
-          ? "…"
-          : "Login",
+          : "…",
       accent: "text-orange-400",
     },
     { label: "Payments", value: String(txs.length), accent: "" },

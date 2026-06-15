@@ -1,21 +1,14 @@
 import { Redis } from "@upstash/redis";
 
-/**
- * Transaction store backed by Upstash Redis (works on Vercel serverless,
- * unlike the previous file-based store which can't persist there).
- *
- * Function names are unchanged, so no other file needs editing.
- * Records are kept in a single JSON list under the key below.
- */
-
 export type TxStatus = "Pending" | "Success" | "Failed";
 
 export type TxRecord = {
   hash: string;
-  address: string;
+  owner: string;   // sender wallet — used to scope history per user
+  address: string; // recipient
   amount: string;
   memo: string;
-  timestamp: string; // ISO 8601
+  timestamp: string;
   status: TxStatus;
 };
 
@@ -44,10 +37,13 @@ async function writeAll(records: TxRecord[]): Promise<void> {
   }
 }
 
-/** Newest first. */
-export async function getTransactions(): Promise<TxRecord[]> {
+/** Newest first. If owner is given, only that owner's transactions. */
+export async function getTransactions(owner?: string): Promise<TxRecord[]> {
   const all = await readAll();
-  return [...all].reverse();
+  const scoped = owner
+    ? all.filter((t) => (t.owner || "").toLowerCase() === owner.toLowerCase())
+    : all;
+  return [...scoped].reverse();
 }
 
 export async function addTransaction(tx: TxRecord): Promise<void> {
@@ -65,10 +61,16 @@ export async function updateStatus(hash: string, status: TxStatus): Promise<void
   }
 }
 
-/** Wipe all stored history (used by the "Clear history" button). */
-export async function clearTransactions(): Promise<void> {
+/** Clear only this owner's history (or everything if no owner given). */
+export async function clearTransactions(owner?: string): Promise<void> {
   try {
-    await redis.del(KEY);
+    if (!owner) {
+      await redis.del(KEY);
+      return;
+    }
+    const all = await readAll();
+    const kept = all.filter((t) => (t.owner || "").toLowerCase() !== owner.toLowerCase());
+    await writeAll(kept);
   } catch (e) {
     console.error("[store] clear failed:", e);
   }

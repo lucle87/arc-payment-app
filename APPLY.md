@@ -1,28 +1,29 @@
-# Tính năng mới: USP Arc + Payment link + AI Agent
+# Mức B — lịch sử riêng theo ví + bắt login
 
-## Cài (không có thư viện mới — chỉ dùng đồ đã có)
-Không cần npm install gì thêm.
+Không cần cài thư viện mới.
 
-## Giải nén đè các file (giữ cấu trúc thư mục)
-- lib/useSendUsdc.ts        (đo thời gian xác nhận + phí USDC + chế độ silent)
-- components/SendForm.tsx   (điền sẵn amount+memo từ link yêu cầu)
-- components/Navbar.tsx     (+ link "AI Agent")
-- app/receive/page.tsx      (+ phần tạo link yêu cầu trả tiền + QR)
-- app/api/ai-agent/route.ts (MỚI — AI lập kế hoạch trả nhiều người)
-- components/AgentPayment.tsx (MỚI — UI agent)
-- app/agent/page.tsx        (MỚI — trang /agent)
+## Giải nén đè (giữ cấu trúc thư mục)
+- lib/store.ts                 (TxRecord có owner; lọc theo owner; xoá theo owner)
+- lib/useSendUsdc.ts           (gửi kèm owner = ví người gửi)
+- app/api/transactions/route.ts (GET/POST/DELETE đều theo ?owner=)
+- components/HomeStats.tsx     (đọc theo owner)
+- components/ExplorerClient.tsx (nhận transactions+owner+onChange; Clear theo owner)
+- app/wallet/page.tsx          (bắt login)
+- app/explorer/page.tsx        (bắt login + chỉ giao dịch của mình)
+- app/contacts/page.tsx        (bắt login)
 
-## Chạy thử
+## Chạy
+  Remove-Item -Recurse -Force .next
   npm run dev
 
-### Thử #1 (USP Arc): gửi 1 giao dịch ở /send -> báo "Confirmed in 0.8s ⚡" + toast.
-### Thử #2 (Payment link): vào /receive -> nhập Amount -> "Copy request link"
-     -> mở link đó (tab ẩn danh) -> form Send đã điền sẵn người nhận + số tiền.
-### Thử #3 (AI Agent): thêm 2-3 contact -> vào /agent -> gõ
-     "Split 30 USDC between Alice and Bob" -> Plan with AI -> Send all.
+### Kiểm tra:
+- Khi CHƯA login: Wallet / History / Contacts đều hiện "Login", không lộ dữ liệu.
+- Login -> gửi 1 giao dịch -> History chỉ hiện giao dịch của ví bạn.
+- Lịch sử test CŨ (không có owner) sẽ KHÔNG hiện nữa (đã làm sạch theo ví) — bình thường.
+- "Clear history" giờ chỉ xoá lịch sử của ví bạn, không đụng người khác.
 
 ## Build + push
   npm run build
   git add .
-  git commit -m "Add Arc USP timing/fee, payment request links, AI agent batch payments"
+  git commit -m "Scope transactions per wallet + require login on Wallet/History/Contacts"
   git push

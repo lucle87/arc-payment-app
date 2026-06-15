@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import TransactionTable from "./TransactionTable";
 import TransactionChart from "./TransactionChart";
 import ExportCsvButton from "./ExportCsvButton";
@@ -17,10 +16,13 @@ type Transaction = {
 
 export default function ExplorerClient({
   transactions,
+  owner,
+  onChange,
 }: {
   transactions: Transaction[];
+  owner: string;
+  onChange?: () => void | Promise<void>;
 }) {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [clearing, setClearing] = useState(false);
 
@@ -35,11 +37,11 @@ export default function ExplorerClient({
   }, [transactions, search]);
 
   async function clearHistory() {
-    if (!confirm("Delete ALL transaction history? This cannot be undone.")) return;
+    if (!confirm("Delete ALL your transaction history? This cannot be undone.")) return;
     setClearing(true);
     try {
-      await fetch("/api/transactions", { method: "DELETE" });
-      router.refresh(); // reload server data
+      await fetch(`/api/transactions?owner=${owner}`, { method: "DELETE" });
+      await onChange?.();
     } finally {
       setClearing(false);
     }

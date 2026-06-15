@@ -18,7 +18,7 @@ export type SendResult = {
   hash: string;
   status: "Success" | "Failed" | "Pending";
   seconds: number;
-  fee: string | null; // gas fee in USDC (Arc pays gas in USDC)
+  fee: string | null;
 };
 
 function normalize(value: string): Address {
@@ -96,7 +96,7 @@ export function useSendUsdc() {
         await fetch("/api/transactions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ hash, address: toAddr, amount, memo: memo ?? "", status }),
+          body: JSON.stringify({ hash, owner: account, address: toAddr, amount, memo: memo ?? "", status }),
         });
       } catch {
         // non-fatal
