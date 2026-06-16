@@ -4,7 +4,7 @@ const FEATURES: { icon: string; title: string; body: string }[] = [
   {
     icon: "📧",
     title: "Email login, your wallet",
-    body: "Sign in with email and a wallet is created for you — no seed phrase, no extension. You hold the keys and can export them anytime.",
+    body: "Sign in with email and a wallet is created for you. No seed phrase, no extension. You hold the keys and can export them anytime.",
   },
   {
     icon: "🤖",
@@ -14,7 +14,7 @@ const FEATURES: { icon: string; title: string; body: string }[] = [
   {
     icon: "⚡",
     title: "Sub-second finality",
-    body: "Built on Arc — transactions settle in under a second, so a payment feels instant.",
+    body: "Built on Arc, and transactions settle in under a second, so a payment feels instant.",
   },
   {
     icon: "💵",
