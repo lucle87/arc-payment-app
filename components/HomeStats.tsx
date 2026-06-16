@@ -45,14 +45,20 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
     .reduce((s, t) => s + Number(t.amount || 0), 0);
 
   const fmt = (v: string | null) =>
-    v != null ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "…";
+    v != null
+      ? Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : "…";
 
   return (
     <div className="grid md:grid-cols-4 gap-8 mb-16">
       <div className="bg-zinc-900 rounded-3xl p-8">
-        <div className="text-zinc-400 mb-2">Balance</div>
-        <div className="text-4xl font-bold text-orange-400">{fmt(usdc)} <span className="text-2xl">USDC</span></div>
-        <div className="mt-1 text-lg font-semibold text-blue-300">{fmt(eurc)} <span className="text-sm">EURC</span></div>
+        <div className="text-zinc-400 mb-3">Balance</div>
+        <div className="text-3xl font-bold text-orange-400">
+          {fmt(usdc)} <span className="text-xl text-orange-300/80">USDC</span>
+        </div>
+        <div className="mt-2 text-3xl font-bold text-blue-300">
+          {fmt(eurc)} <span className="text-xl text-blue-300/70">EURC</span>
+        </div>
       </div>
       <div className="bg-zinc-900 rounded-3xl p-8">
         <div className="text-zinc-400 mb-2">Payments</div>
