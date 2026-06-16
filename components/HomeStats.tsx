@@ -40,9 +40,13 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
       .catch(() => {});
   }, [address, refreshSignal]);
 
-  const usdcVolume = txs
-    .filter((t) => t.status === "Success" && (t.token ?? "USDC") === "USDC")
-    .reduce((s, t) => s + Number(t.amount || 0), 0);
+  const volumeOf = (token: "USDC" | "EURC") =>
+    txs
+      .filter((t) => t.status === "Success" && (t.token ?? "USDC") === token)
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+
+  const usdcVolume = volumeOf("USDC");
+  const eurcVolume = volumeOf("EURC");
 
   const fmt = (v: string | null) =>
     v != null
@@ -60,17 +64,25 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
           {fmt(eurc)} <span className="text-xl text-blue-300/70">EURC</span>
         </div>
       </div>
+
       <div className="bg-zinc-900 rounded-3xl p-8">
         <div className="text-zinc-400 mb-2">Payments</div>
         <div className="text-4xl font-bold">{txs.length}</div>
       </div>
+
       <div className="bg-zinc-900 rounded-3xl p-8">
         <div className="text-zinc-400 mb-2">Contacts</div>
         <div className="text-4xl font-bold">{contacts.length}</div>
       </div>
+
       <div className="bg-zinc-900 rounded-3xl p-8">
-        <div className="text-zinc-400 mb-2">Volume (USDC)</div>
-        <div className="text-4xl font-bold text-green-400">{usdcVolume.toFixed(2)}</div>
+        <div className="text-zinc-400 mb-3">Volume</div>
+        <div className="text-3xl font-bold text-green-400">
+          {usdcVolume.toFixed(2)} <span className="text-xl text-green-400/80">USDC</span>
+        </div>
+        <div className="mt-2 text-3xl font-bold text-blue-300">
+          {eurcVolume.toFixed(2)} <span className="text-xl text-blue-300/70">EURC</span>
+        </div>
       </div>
     </div>
   );
