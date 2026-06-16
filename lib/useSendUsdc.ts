@@ -12,13 +12,14 @@ import {
   type Address,
 } from "viem";
 import { arcTestnet } from "viem/chains";
-import { ARC_USDC_ADDRESS, USDC_DECIMALS, publicClient } from "@/lib/chain";
+import { TOKENS, publicClient, type TokenSymbol } from "@/lib/chain";
 
 export type SendResult = {
   hash: string;
   status: "Success" | "Failed" | "Pending";
   seconds: number;
   fee: string | null;
+  token: TokenSymbol;
 };
 
 function normalize(value: string): Address {
@@ -32,17 +33,20 @@ export function useSendUsdc() {
     to,
     amount,
     memo,
+    token = "USDC",
     silent,
   }: {
     to: string;
     amount: string;
     memo?: string;
+    token?: TokenSymbol;
     silent?: boolean;
   }): Promise<SendResult> {
     const embedded = wallets.find((w) => w.walletClientType === "privy");
     if (!embedded) throw new Error("No wallet found. Please log in first.");
 
-    const toastId = silent ? undefined : toast.loading(`Sending ${amount} USDC…`);
+    const t = TOKENS[token];
+    const toastId = silent ? undefined : toast.loading(`Sending ${amount} ${token}…`);
     const start = Date.now();
     try {
       try {
@@ -60,10 +64,10 @@ export function useSendUsdc() {
       });
 
       const toAddr = normalize(to);
-      const value = parseUnits(amount, USDC_DECIMALS);
+      const value = parseUnits(amount, t.decimals);
 
       const hash = await walletClient.writeContract({
-        address: ARC_USDC_ADDRESS,
+        address: t.address,
         abi: erc20Abi,
         functionName: "transfer",
         args: [toAddr, value],
@@ -96,7 +100,7 @@ export function useSendUsdc() {
         await fetch("/api/transactions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ hash, owner: account, address: toAddr, amount, memo: memo ?? "", status }),
+          body: JSON.stringify({ hash, owner: account, address: toAddr, amount, memo: memo ?? "", status, token }),
         });
       } catch {
         // non-fatal
@@ -112,7 +116,7 @@ export function useSendUsdc() {
         }
       }
 
-      return { hash, status, seconds, fee };
+      return { hash, status, seconds, fee, token };
     } catch (e) {
       if (!silent && toastId !== undefined) {
         toast.error(e instanceof Error ? e.message : "Payment failed", { id: toastId });

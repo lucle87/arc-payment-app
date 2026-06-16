@@ -1,39 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { useState, useEffect, useMemo } from "react";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useContacts } from "@/lib/useContacts";
 import { useSendUsdc } from "@/lib/useSendUsdc";
+import { getTokenBalance, type TokenSymbol } from "@/lib/chain";
 
 type Result =
   | { status: "idle" }
   | { status: "sending" }
-  | { status: "success"; hash: string; txStatus: string; seconds: number; fee: string | null }
+  | { status: "success"; hash: string; txStatus: string; seconds: number; token: TokenSymbol }
   | { status: "error"; message: string };
 
 const HEX = /^0x[0-9a-fA-F]{40}$/;
+const TOKENS_LIST: TokenSymbol[] = ["USDC", "EURC"];
 
 export default function SendForm({ onSent }: { onSent?: () => void }) {
   const { authenticated, login } = usePrivy();
+  const { wallets } = useWallets();
   const { contacts, nameByAddress } = useContacts();
   const { send } = useSendUsdc();
 
+  const [token, setToken] = useState<TokenSymbol>("USDC");
+  const [balance, setBalance] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<Result>({ status: "idle" });
 
-  // Prefill from a payment-request link: /send?to=..&amount=..&memo=..
+  const walletAddress = useMemo(
+    () => wallets.find((w) => w.walletClientType === "privy")?.address,
+    [wallets]
+  );
+
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const to = q.get("to");
     const amt = q.get("amount");
     const m = q.get("memo");
+    const tk = q.get("token");
     if (to && HEX.test(to)) setAddress(to);
     if (amt && Number(amt) > 0) setAmount(amt);
     if (m) setMemo(m);
+    if (tk === "EURC" || tk === "USDC") setToken(tk);
   }, []);
+
+  useEffect(() => {
+    if (!walletAddress) return setBalance(null);
+    getTokenBalance(walletAddress as `0x${string}`, token).then(setBalance).catch(() => setBalance(null));
+  }, [walletAddress, token, result]);
 
   const amountNum = Number(amount);
   const amountValid = Number.isFinite(amountNum) && amountNum > 0;
@@ -44,8 +60,8 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
   async function doSend() {
     setResult({ status: "sending" });
     try {
-      const { hash, status, seconds, fee } = await send({ to: address, amount, memo });
-      setResult({ status: "success", hash, txStatus: status, seconds, fee });
+      const { hash, status, seconds } = await send({ to: address, amount, memo, token });
+      setResult({ status: "success", hash, txStatus: status, seconds, token });
       setAddress("");
       setAmount("");
       setMemo("");
@@ -68,6 +84,29 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
         </button>
       ) : (
         <div className="space-y-6">
+          {/* Token selector */}
+          <div>
+            <label className="block mb-2 text-zinc-400">Currency</label>
+            <div className="flex gap-2">
+              {TOKENS_LIST.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setToken(t)}
+                  className={
+                    token === t
+                      ? "flex-1 rounded-xl bg-orange-500 py-2.5 font-semibold"
+                      : "flex-1 rounded-xl border border-zinc-700 py-2.5 text-zinc-300 hover:bg-zinc-900"
+                  }
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-zinc-500">
+              Balance: {balance != null ? `${Number(balance).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${token}` : "…"}
+            </p>
+          </div>
+
           <div>
             <label className="block mb-2 text-zinc-400">Recipient</label>
             <select
@@ -76,7 +115,7 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
               className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 mb-3"
             >
               <option value="">
-                {contacts.length ? "Select a contact…" : "No contacts — add some, or paste below"}
+                {contacts.length ? "Select a contact…" : "No contacts yet, or paste an address below"}
               </option>
               {contacts.map((c) => (
                 <option key={c.id} value={c.address}>
@@ -94,7 +133,7 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
           </div>
 
           <div>
-            <label className="block mb-2 text-zinc-400">Amount (USDC)</label>
+            <label className="block mb-2 text-zinc-400">Amount ({token})</label>
             <input
               type="number"
               min="0"
@@ -129,7 +168,7 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
           ) : (
             <div className="rounded-xl border border-orange-500/40 bg-orange-500/10 p-4 space-y-4">
               <p className="text-sm">
-                Send <span className="font-bold text-orange-400">{amount} USDC</span> to{" "}
+                Send <span className="font-bold text-orange-400">{amount} {token}</span> to{" "}
                 <span className="font-bold break-all">{recipientName}</span>?
               </p>
               <div className="flex gap-3">
@@ -154,11 +193,6 @@ export default function SendForm({ onSent }: { onSent?: () => void }) {
                   ? `⚡ Confirmed in ${result.seconds.toFixed(1)}s`
                   : `Submitted in ${result.seconds.toFixed(1)}s ⏳`}
               </p>
-              {result.fee && Number(result.fee) > 0 && (
-                <p className="text-xs text-zinc-400 mb-2">
-                  Network fee ≈ {Number(result.fee).toFixed(4)} USDC · paid in USDC on Arc
-                </p>
-              )}
               {result.hash && (
                 <a href={`/explorer/${result.hash}`} className="text-sm text-blue-400 break-all underline">
                   {result.hash}

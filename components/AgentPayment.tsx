@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useContacts } from "@/lib/useContacts";
 import { useSendUsdc } from "@/lib/useSendUsdc";
+import { detectToken, type TokenSymbol } from "@/lib/chain";
 
 type Row = {
   recipient: string;
@@ -29,6 +30,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
   const { send } = useSendUsdc();
 
   const [text, setText] = useState("");
+  const [token, setToken] = useState<TokenSymbol>("USDC");
   const [phase, setPhase] = useState<Phase>({ status: "idle" });
   const [rows, setRows] = useState<Row[]>([]);
 
@@ -39,6 +41,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
     if (!authenticated) return login();
     setPhase({ status: "planning" });
     setRows([]);
+    setToken(detectToken(text));
     try {
       const res = await fetch("/api/ai-agent", {
         method: "POST",
@@ -69,10 +72,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
       }
 
       if (missing.length) {
-        setPhase({
-          status: "error",
-          message: `Not in contacts: ${missing.join(", ")}. Add them first.`,
-        });
+        setPhase({ status: "error", message: `Not in contacts: ${missing.join(", ")}. Add them first.` });
         return;
       }
       setRows(built);
@@ -91,6 +91,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
           to: rows[i].address,
           amount: rows[i].amount,
           memo: rows[i].memo,
+          token,
           silent: true,
         });
         setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, state: "done", hash, seconds, fee } : r)));
@@ -108,7 +109,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
       <h2 className="text-3xl font-bold mb-2">AI Agent 🤖</h2>
       <p className="text-zinc-500 mb-6 text-sm">
         Pay many people at once. Try: &quot;Split 30 USDC between Alice and Bob for dinner&quot; or
-        &quot;Pay everyone 1 USDC&quot;.
+        &quot;Pay everyone 1 EURC&quot;.
       </p>
 
       {!authenticated ? (
@@ -136,7 +137,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
           {(phase.status === "review" || phase.status === "running") && (
             <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
               <div className="mb-3 flex justify-between text-sm text-zinc-400">
-                <span>{rows.length} payment(s) · total {total.toFixed(2)} USDC</span>
+                <span>{rows.length} payment(s) · total {total.toFixed(2)} {token}</span>
                 {phase.status === "running" && (
                   <span className="text-orange-400">{sentCount}/{rows.length} sent</span>
                 )}
@@ -150,9 +151,9 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
                       {r.memo && <div className="text-xs text-zinc-500">{r.memo}</div>}
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-orange-400 font-semibold">{r.amount} USDC</span>
+                      <span className="text-orange-400 font-semibold">{r.amount} {token}</span>
                       <span className="text-sm w-20 text-right">
-                        {r.state === "idle" && <span className="text-zinc-600">—</span>}
+                        {r.state === "idle" && <span className="text-zinc-600">·</span>}
                         {r.state === "sending" && <span className="text-zinc-400">…</span>}
                         {r.state === "done" &&
                           (r.hash ? (
@@ -171,16 +172,10 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
 
               {phase.status === "review" && (
                 <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={() => setPhase({ status: "idle" })}
-                    className="flex-1 rounded-xl border border-zinc-700 py-3"
-                  >
+                  <button onClick={() => setPhase({ status: "idle" })} className="flex-1 rounded-xl border border-zinc-700 py-3">
                     Cancel
                   </button>
-                  <button
-                    onClick={run}
-                    className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold"
-                  >
+                  <button onClick={run} className="flex-1 rounded-xl bg-orange-500 py-3 font-semibold">
                     Send all ({rows.length})
                   </button>
                 </div>
@@ -192,12 +187,7 @@ export default function AgentPayment({ onSent }: { onSent?: () => void }) {
                   {(() => {
                     const done = rows.filter((r) => r.state === "done" && r.seconds != null);
                     const avg = done.length ? done.reduce((s, r) => s + (r.seconds || 0), 0) / done.length : 0;
-                    const feeSum = rows.reduce((s, r) => s + Number(r.fee || 0), 0);
-                    return (
-                      <p className="text-xs text-zinc-400 mt-1">
-                        avg {avg.toFixed(1)}s each{feeSum > 0 ? ` · total fee ≈ ${feeSum.toFixed(4)} USDC` : ""}
-                      </p>
-                    );
+                    return <p className="text-xs text-zinc-400 mt-1">avg {avg.toFixed(1)}s each</p>;
                   })()}
                 </div>
               )}

@@ -3,14 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useWallets } from "@privy-io/react-auth";
 import { useContacts } from "@/lib/useContacts";
-import { getUsdcBalance } from "@/lib/chain";
+import { getUsdcBalance, getEurcBalance } from "@/lib/chain";
 
-type Tx = { amount: string; status: string };
+type Tx = { amount: string; status: string; token?: string };
 
 export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: number }) {
   const { wallets } = useWallets();
   const { contacts } = useContacts();
-  const [balance, setBalance] = useState<string | null>(null);
+  const [usdc, setUsdc] = useState<string | null>(null);
+  const [eurc, setEurc] = useState<string | null>(null);
   const [txs, setTxs] = useState<Tx[]>([]);
 
   const address = useMemo(
@@ -20,10 +21,12 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
 
   useEffect(() => {
     if (!address) {
-      setBalance(null);
+      setUsdc(null);
+      setEurc(null);
       return;
     }
-    getUsdcBalance(address as `0x${string}`).then(setBalance).catch(() => setBalance(null));
+    getUsdcBalance(address as `0x${string}`).then(setUsdc).catch(() => setUsdc(null));
+    getEurcBalance(address as `0x${string}`).then(setEurc).catch(() => setEurc(null));
   }, [address, refreshSignal]);
 
   useEffect(() => {
@@ -37,32 +40,32 @@ export default function HomeStats({ refreshSignal = 0 }: { refreshSignal?: numbe
       .catch(() => {});
   }, [address, refreshSignal]);
 
-  const volume = txs
-    .filter((t) => t.status === "Success")
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const usdcVolume = txs
+    .filter((t) => t.status === "Success" && (t.token ?? "USDC") === "USDC")
+    .reduce((s, t) => s + Number(t.amount || 0), 0);
 
-  const cards = [
-    {
-      label: "Balance",
-      value:
-        address && balance != null
-          ? `${Number(balance).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`
-          : "…",
-      accent: "text-orange-400",
-    },
-    { label: "Payments", value: String(txs.length), accent: "" },
-    { label: "Contacts", value: String(contacts.length), accent: "" },
-    { label: "Volume", value: `${volume.toFixed(2)} USDC`, accent: "text-green-400" },
-  ];
+  const fmt = (v: string | null) =>
+    v != null ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "…";
 
   return (
     <div className="grid md:grid-cols-4 gap-8 mb-16">
-      {cards.map((c) => (
-        <div key={c.label} className="bg-zinc-900 rounded-3xl p-8">
-          <div className="text-zinc-400 mb-2">{c.label}</div>
-          <div className={`text-4xl font-bold ${c.accent}`}>{c.value}</div>
-        </div>
-      ))}
+      <div className="bg-zinc-900 rounded-3xl p-8">
+        <div className="text-zinc-400 mb-2">Balance</div>
+        <div className="text-4xl font-bold text-orange-400">{fmt(usdc)} <span className="text-2xl">USDC</span></div>
+        <div className="mt-1 text-lg font-semibold text-blue-300">{fmt(eurc)} <span className="text-sm">EURC</span></div>
+      </div>
+      <div className="bg-zinc-900 rounded-3xl p-8">
+        <div className="text-zinc-400 mb-2">Payments</div>
+        <div className="text-4xl font-bold">{txs.length}</div>
+      </div>
+      <div className="bg-zinc-900 rounded-3xl p-8">
+        <div className="text-zinc-400 mb-2">Contacts</div>
+        <div className="text-4xl font-bold">{contacts.length}</div>
+      </div>
+      <div className="bg-zinc-900 rounded-3xl p-8">
+        <div className="text-zinc-400 mb-2">Volume (USDC)</div>
+        <div className="text-4xl font-bold text-green-400">{usdcVolume.toFixed(2)}</div>
+      </div>
     </div>
   );
 }

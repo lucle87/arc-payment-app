@@ -5,6 +5,7 @@ import {
   addTransaction,
   clearTransactions,
   type TxStatus,
+  type TxToken,
 } from "@/lib/store";
 import { publicClient } from "@/lib/chain";
 
@@ -14,7 +15,6 @@ const HEX_HASH = /^0x[0-9a-fA-F]{64}$/;
 export async function GET(req: NextRequest) {
   try {
     const owner = req.nextUrl.searchParams.get("owner");
-    // No valid owner -> return nothing (history is private per wallet).
     if (!owner || !HEX_ADDRESS.test(owner)) {
       return NextResponse.json({ success: true, transactions: [] });
     }
@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid amount" }, { status: 400 });
     }
 
+    const token: TxToken = body.token === "EURC" ? "EURC" : "USDC";
+
     let status: TxStatus =
       body.status === "Success" || body.status === "Failed" ? body.status : "Pending";
     try {
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
       owner: getAddress(owner.toLowerCase()),
       address: getAddress(address.toLowerCase()),
       amount: String(amount),
+      token,
       memo: typeof memo === "string" ? memo.slice(0, 200) : "",
       timestamp: new Date().toISOString(),
       status,

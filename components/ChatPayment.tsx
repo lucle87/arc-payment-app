@@ -4,9 +4,10 @@ import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useContacts } from "@/lib/useContacts";
 import { useSendUsdc } from "@/lib/useSendUsdc";
+import { detectToken, type TokenSymbol } from "@/lib/chain";
 
 type Message = { role: "user" | "assistant"; content: string; hash?: string };
-type Pending = { recipient: string; address: string; amount: string; memo: string };
+type Pending = { recipient: string; address: string; amount: string; memo: string; token: TokenSymbol };
 
 export default function ChatPayment({ onSent }: { onSent?: () => void }) {
   const { authenticated, login } = usePrivy();
@@ -47,17 +48,15 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
       }
       const contact = resolveByName(ai.recipient);
       if (!contact) {
-        replaceLast({
-          role: "assistant",
-          content: `Contact "${ai.recipient}" not found. Add them in Contacts.`,
-        });
+        replaceLast({ role: "assistant", content: `Contact "${ai.recipient}" not found. Add them in Contacts.` });
         return;
       }
-      setPending({ recipient: contact.name, address: contact.address, amount: ai.amount, memo: ai.memo ?? "" });
+      const token = detectToken(userMessage);
+      setPending({ recipient: contact.name, address: contact.address, amount: ai.amount, memo: ai.memo ?? "", token });
       replaceLast({
         role: "assistant",
         content:
-          `Please confirm:\n\nRecipient: ${contact.name}\nAmount: ${ai.amount} USDC` +
+          `Please confirm:\n\nRecipient: ${contact.name}\nAmount: ${ai.amount} ${token}` +
           (ai.memo ? `\nMemo: ${ai.memo}` : ""),
       });
     } catch {
@@ -72,15 +71,15 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
     const p = pending;
     setPending(null);
     setLoading(true);
-    push({ role: "assistant", content: `Sending ${p.amount} USDC to ${p.recipient}… ⏳` });
+    push({ role: "assistant", content: `Sending ${p.amount} ${p.token} to ${p.recipient}… ⏳` });
     try {
-      const { hash, status } = await send({ to: p.address, amount: p.amount, memo: p.memo });
+      const { hash, status, seconds } = await send({ to: p.address, amount: p.amount, memo: p.memo, token: p.token });
       replaceLast({
         role: "assistant",
         hash,
         content:
-          `Payment ${status === "Success" ? "confirmed ✅" : "submitted ⏳"}\n\n` +
-          `Recipient: ${p.recipient}\nAmount: ${p.amount} USDC` +
+          `${status === "Success" ? `⚡ Confirmed in ${seconds.toFixed(1)}s` : "Payment submitted ⏳"}\n\n` +
+          `Recipient: ${p.recipient}\nAmount: ${p.amount} ${p.token}` +
           (p.memo ? `\nMemo: ${p.memo}` : ""),
       });
       onSent?.();
@@ -143,7 +142,7 @@ export default function ChatPayment({ onSent }: { onSent?: () => void }) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleParse()}
-            placeholder="Send 0.1 USDC to Alice for pizza 🍕"
+            placeholder="Send 0.1 USDC to Alice (or 1 EURC) for pizza 🍕"
             className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 outline-none"
             disabled={loading || !!pending}
           />

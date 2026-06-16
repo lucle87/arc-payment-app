@@ -1,12 +1,14 @@
 import { Redis } from "@upstash/redis";
 
 export type TxStatus = "Pending" | "Success" | "Failed";
+export type TxToken = "USDC" | "EURC";
 
 export type TxRecord = {
   hash: string;
-  owner: string;   // sender wallet — used to scope history per user
-  address: string; // recipient
+  owner: string;
+  address: string;
   amount: string;
+  token: TxToken;
   memo: string;
   timestamp: string;
   status: TxStatus;
@@ -37,7 +39,6 @@ async function writeAll(records: TxRecord[]): Promise<void> {
   }
 }
 
-/** Newest first. If owner is given, only that owner's transactions. */
 export async function getTransactions(owner?: string): Promise<TxRecord[]> {
   const all = await readAll();
   const scoped = owner
@@ -61,7 +62,6 @@ export async function updateStatus(hash: string, status: TxStatus): Promise<void
   }
 }
 
-/** Clear only this owner's history (or everything if no owner given). */
 export async function clearTransactions(owner?: string): Promise<void> {
   try {
     if (!owner) {

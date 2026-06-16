@@ -1,39 +1,60 @@
-import { createPublicClient, http, erc20Abi, formatUnits } from "viem";
+import {
+  createPublicClient,
+  http,
+  erc20Abi,
+  formatUnits,
+  type Address,
+} from "viem";
 import { arcTestnet } from "viem/chains";
-
-/**
- * Arc testnet config (single source of truth).
- * - Chain id: 5042002 (arcTestnet is built into viem, no custom chain needed)
- * - USDC is the NATIVE gas token on Arc, exposed as an ERC-20 at this system address.
- * - The ERC-20 interface uses 6 decimals (the native gas interface uses 18).
- *   For reading balances and sending transfers we ALWAYS use the 6-decimal ERC-20 view.
- */
-export const ARC_USDC_ADDRESS =
-  "0x3600000000000000000000000000000000000000" as const;
-export const USDC_DECIMALS = 6;
 
 export const publicClient = createPublicClient({
   chain: arcTestnet,
-  // If ARC_TESTNET_RPC_URL is unset, viem uses Arc's default public RPC.
-  transport: http(process.env.ARC_TESTNET_RPC_URL),
+  transport: http(),
 });
 
-/** Block-explorer URL for a tx hash (falls back to viem's chain definition). */
-export function explorerTxUrl(hash: string): string {
-  const base = arcTestnet.blockExplorers?.default?.url;
-  return base ? `${base}/tx/${hash}` : "";
+// --- Tokens on Arc testnet (both 6 decimals) ---
+export const ARC_USDC_ADDRESS = "0x3600000000000000000000000000000000000000" as Address;
+export const USDC_DECIMALS = 6;
+
+export const ARC_EURC_ADDRESS = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" as Address;
+export const EURC_DECIMALS = 6;
+
+export type TokenSymbol = "USDC" | "EURC";
+
+export const TOKENS: Record<TokenSymbol, { symbol: TokenSymbol; address: Address; decimals: number }> = {
+  USDC: { symbol: "USDC", address: ARC_USDC_ADDRESS, decimals: USDC_DECIMALS },
+  EURC: { symbol: "EURC", address: ARC_EURC_ADDRESS, decimals: EURC_DECIMALS },
+};
+
+export function isToken(value: unknown): value is TokenSymbol {
+  return value === "USDC" || value === "EURC";
 }
 
-/** Read the USDC balance of an address as a human string, e.g. "12.5". */
-export async function getUsdcBalance(
-  address: `0x${string}`
-): Promise<string> {
-  const raw = (await publicClient.readContract({
-    address: ARC_USDC_ADDRESS,
+/** Read an ERC-20 balance, formatted as a decimal string. */
+export async function getTokenBalance(address: Address, token: TokenSymbol): Promise<string> {
+  const t = TOKENS[token];
+  const bal = (await publicClient.readContract({
+    address: t.address,
     abi: erc20Abi,
     functionName: "balanceOf",
     args: [address],
   })) as bigint;
+  return formatUnits(bal, t.decimals);
+}
 
-  return formatUnits(raw, USDC_DECIMALS);
+export async function getUsdcBalance(address: Address): Promise<string> {
+  return getTokenBalance(address, "USDC");
+}
+
+export async function getEurcBalance(address: Address): Promise<string> {
+  return getTokenBalance(address, "EURC");
+}
+
+/** Guess the intended token from free text (defaults to USDC). */
+export function detectToken(text: string): TokenSymbol {
+  return /eurc|euro|€/i.test(text) ? "EURC" : "USDC";
+}
+
+export function explorerTxUrl(hash: string): string {
+  return `https://testnet.arcscan.app/tx/${hash}`;
 }

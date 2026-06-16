@@ -1,29 +1,35 @@
-# Mức B — lịch sử riêng theo ví + bắt login
+# EURC — hỗ trợ 2 loại tiền (USDC + EURC)
 
 Không cần cài thư viện mới.
 
-## Giải nén đè (giữ cấu trúc thư mục)
-- lib/store.ts                 (TxRecord có owner; lọc theo owner; xoá theo owner)
-- lib/useSendUsdc.ts           (gửi kèm owner = ví người gửi)
-- app/api/transactions/route.ts (GET/POST/DELETE đều theo ?owner=)
-- components/HomeStats.tsx     (đọc theo owner)
-- components/ExplorerClient.tsx (nhận transactions+owner+onChange; Clear theo owner)
-- app/wallet/page.tsx          (bắt login)
-- app/explorer/page.tsx        (bắt login + chỉ giao dịch của mình)
-- app/contacts/page.tsx        (bắt login)
+## Giải nén đè (giữ cấu trúc thư mục) — 11 file
+- lib/chain.ts                 (thêm EURC, getEurcBalance, TOKENS, detectToken)
+- lib/useSendUsdc.ts           (tham số token)
+- lib/store.ts                 (TxRecord có token)
+- app/api/transactions/route.ts (lưu token)
+- components/SendForm.tsx      (nút chọn USDC/EURC + số dư token đang chọn)
+- components/HomeStats.tsx     (số dư cả USDC và EURC)
+- components/TransactionTable.tsx (hiện đúng đồng tiền mỗi dòng)
+- components/ChatPayment.tsx   (AI Wallet nhận "EURC")
+- components/AISendForm.tsx    (nhận "EURC")
+- components/AgentPayment.tsx  (nhận "EURC" cho cả lô)
+- app/receive/page.tsx         (request link chọn USDC/EURC)
 
 ## Chạy
   Remove-Item -Recurse -Force .next
   npm run dev
 
-### Kiểm tra:
-- Khi CHƯA login: Wallet / History / Contacts đều hiện "Login", không lộ dữ liệu.
-- Login -> gửi 1 giao dịch -> History chỉ hiện giao dịch của ví bạn.
-- Lịch sử test CŨ (không có owner) sẽ KHÔNG hiện nữa (đã làm sạch theo ví) — bình thường.
-- "Clear history" giờ chỉ xoá lịch sử của ví bạn, không đụng người khác.
+### Thử:
+- /send: bấm nút EURC -> số dư đổi sang EURC -> gửi 1 EURC (cần đã nạp EURC từ faucet).
+- AI Wallet: gõ "Send 1 EURC to Alice" -> review hiện EURC -> gửi.
+- /wallet: thấy số dư USDC + EURC.
+- /explorer: dòng giao dịch hiện đúng "USDC" hoặc "EURC".
+
+## Lấy EURC test
+faucet.circle.com -> chọn Arc Testnet -> sẽ có cả USDC và EURC.
 
 ## Build + push
   npm run build
   git add .
-  git commit -m "Scope transactions per wallet + require login on Wallet/History/Contacts"
+  git commit -m "Add EURC: multi-currency send, balances, history, AI detection"
   git push
