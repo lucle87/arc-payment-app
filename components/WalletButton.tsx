@@ -80,11 +80,7 @@ export default function WalletButton() {
         className="flex items-center gap-2.5 rounded-2xl border border-zinc-700 bg-zinc-900/70 px-3 py-1.5 hover:border-zinc-500"
       >
         {address && <Avatar address={address} size={30} />}
-        <span className="text-left leading-tight">
-          <span className="block text-xs text-zinc-200">{short(address)}</span>
-          <span className="block text-[11px] font-semibold text-orange-400">{fmt(usdc)} USDC</span>
-          <span className="block text-[11px] font-semibold text-blue-300">{fmt(eurc)} EURC</span>
-        </span>
+        <span className="text-sm text-zinc-200">{short(address)}</span>
         <span className="text-zinc-500 text-xs">▾</span>
       </button>
 
