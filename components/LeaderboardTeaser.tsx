@@ -105,13 +105,14 @@ export default function LeaderboardTeaser() {
           </div>
         )}
 
-        {/* Built on / Powered by */}
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <p className="text-[11px] uppercase tracking-widest text-zinc-500">Built on Arc, powered by Circle</p>
-          <div className="flex items-center gap-8 opacity-90">
-            <img src="/arc-logo.png" alt="Arc" className="h-8 w-auto object-contain" />
-            <img src="/circle-logo.png" alt="Circle" className="h-6 w-auto object-contain" />
-          </div>
+      </div>
+
+      {/* Built on / Powered by, placed BELOW the card */}
+      <div className="mt-12 flex flex-col items-center gap-5">
+        <p className="text-2xl uppercase tracking-widest text-zinc-500">Built on Arc, powered by Circle</p>
+        <div className="flex items-center gap-12 opacity-90">
+          <img src="/arc-logo.png" alt="Arc" className="h-40 w-auto object-contain" />
+          <img src="/circle-logo.png" alt="Circle" className="h-40 w-auto object-contain" />
         </div>
       </div>
     </section>
