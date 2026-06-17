@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LeaderboardTeaser from "@/components/LeaderboardTeaser";
 
 const FEATURES: { icon: string; title: string; body: string }[] = [
   {
@@ -46,12 +46,9 @@ export default function Home() {
             and send or split USDC with one sentence, settled in under a second on Arc.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link
-              href="/send"
-              className="rounded-xl bg-orange-500 px-7 py-3.5 font-semibold hover:bg-orange-400 btn-glow"
-            >
+            <a href="/send" className="rounded-xl bg-orange-500 px-7 py-3.5 font-semibold hover:bg-orange-400 btn-glow">
               Launch app
-            </Link>
+            </a>
             <a
               href="https://faucet.circle.com"
               target="_blank"
@@ -65,7 +62,7 @@ export default function Home() {
       </section>
 
       {/* ===== Feature cards ===== */}
-      <section className="max-w-7xl mx-auto px-5 md:px-8 pb-24">
+      <section className="max-w-7xl mx-auto px-5 md:px-8 pb-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {FEATURES.map((f) => (
             <div key={f.title} className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
@@ -76,6 +73,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ===== Leaderboard teaser ===== */}
+      <LeaderboardTeaser />
     </main>
   );
 }
