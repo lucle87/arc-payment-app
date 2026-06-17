@@ -104,6 +104,15 @@ export default function LeaderboardTeaser() {
             </a>
           </div>
         )}
+
+        {/* Built on / Powered by */}
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <p className="text-[11px] uppercase tracking-widest text-zinc-500">Built on Arc, powered by Circle</p>
+          <div className="flex items-center gap-8 opacity-90">
+            <img src="/arc-logo.png" alt="Arc" className="h-8 w-auto object-contain" />
+            <img src="/circle-logo.png" alt="Circle" className="h-6 w-auto object-contain" />
+          </div>
+        </div>
       </div>
     </section>
   );
