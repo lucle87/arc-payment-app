@@ -1,4 +1,4 @@
-# ⚡ ARC Payment App
+# ⚡ BoPay
 
 > A stablecoin wallet that feels like a normal app. Log in with email, get a wallet, and send or split USDC and EURC by simply typing. Built on [Arc](https://www.arc.io/), Circle's stablecoin-native L1.
 
@@ -8,9 +8,7 @@
 
 ## What it is
 
-ARC Payment App removes the usual friction of crypto payments. There is no seed phrase and no browser extension: you sign in with an email, a wallet is created for you, and you pay by describing the payment in plain English. Transactions settle in under a second on Arc, and gas is paid in USDC, so a stablecoin payment finally feels like using a normal app.
-<img width="1225" height="840" alt="image" src="https://github.com/user-attachments/assets/cf776707-cb8f-46d0-b3ba-cc5c2d49e7ed" />
-
+BoPay removes the usual friction of crypto payments. There is no seed phrase and no browser extension: you sign in with an email, a wallet is created for you, and you pay by describing the payment in plain English. Transactions settle in under a second on Arc, and gas is paid in USDC, so a stablecoin payment finally feels like using a normal app.
 
 ## Features
 
@@ -54,7 +52,6 @@ This app is built to showcase what Arc does that general-purpose chains do not:
 | `/agent` | AI agent for batch and split payments |
 | `/explorer` | Your private transaction history, chart, search, CSV |
 | `/contacts` | Saved recipients |
-<img width="1062" height="850" alt="image" src="https://github.com/user-attachments/assets/aa2026fc-8a42-4ee5-9efe-90e47360cd1d" />
 
 ## Tech stack
 
