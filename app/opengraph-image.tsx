@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "ARC Payment App";
+export const alt = "BoPay";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -39,7 +39,7 @@ export default function OpengraphImage() {
           >
             ⚡
           </div>
-          <div style={{ fontSize: 30, color: "#fdba74", fontWeight: 700 }}>ARC Payment App</div>
+          <div style={{ fontSize: 30, color: "#fdba74", fontWeight: 700 }}>BoPay</div>
         </div>
 
         <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.05, maxWidth: 900 }}>
