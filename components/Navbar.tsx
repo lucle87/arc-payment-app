@@ -24,8 +24,8 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <img src="/logo.png" alt="ARC" className="h-14 md:h-16 w-auto object-contain" />
           <span className="text-lg md:text-xl font-bold tracking-tight">
-            <span className="text-orange-400">ARC</span>{" "}
-            <span className="text-white">Payment</span>
+            <span className="text-orange-400">Bo</span>{" "}
+            <span className="text-white">Arcpay</span>
           </span>
         </Link>
 
