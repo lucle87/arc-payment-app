@@ -9,10 +9,20 @@ import {
   formatUnits,
   getAddress,
   erc20Abi,
+  encodeFunctionData,
+  keccak256,
+  stringToHex,
   type Address,
+  type Hex,
 } from "viem";
 import { arcTestnet } from "viem/chains";
-import { TOKENS, publicClient, type TokenSymbol } from "@/lib/chain";
+import {
+  TOKENS,
+  publicClient,
+  ARC_MEMO_ADDRESS,
+  MEMO_ABI,
+  type TokenSymbol,
+} from "@/lib/chain";
 
 export type SendResult = {
   hash: string;
@@ -20,6 +30,8 @@ export type SendResult = {
   seconds: number;
   fee: string | null;
   token: TokenSymbol;
+  memoId: string | null;
+  onchainMemo: boolean;
 };
 
 function normalize(value: string): Address {
@@ -65,15 +77,40 @@ export function useSendUsdc() {
 
       const toAddr = normalize(to);
       const value = parseUnits(amount, t.decimals);
+      const trimmedMemo = (memo ?? "").trim();
 
-      const hash = await walletClient.writeContract({
-        address: t.address,
-        abi: erc20Abi,
-        functionName: "transfer",
-        args: [toAddr, value],
-        account,
-        chain: arcTestnet,
-      });
+      let hash: Hex;
+      let memoId: Hex | null = null;
+
+      if (trimmedMemo) {
+        // On-chain memo: forward the ERC-20 transfer through Arc's Memo contract.
+        const transferData = encodeFunctionData({
+          abi: erc20Abi,
+          functionName: "transfer",
+          args: [toAddr, value],
+        });
+        memoId = keccak256(stringToHex(`${account}-${Date.now()}-${Math.random()}`));
+        const memoData = stringToHex(trimmedMemo);
+
+        hash = await walletClient.writeContract({
+          address: ARC_MEMO_ADDRESS,
+          abi: MEMO_ABI,
+          functionName: "memo",
+          args: [t.address, transferData, memoId, memoData],
+          account,
+          chain: arcTestnet,
+        });
+      } else {
+        // No memo: plain ERC-20 transfer (cheaper).
+        hash = await walletClient.writeContract({
+          address: t.address,
+          abi: erc20Abi,
+          functionName: "transfer",
+          args: [toAddr, value],
+          account,
+          chain: arcTestnet,
+        });
+      }
 
       let status: SendResult["status"] = "Pending";
       let seconds = 0;
@@ -100,7 +137,17 @@ export function useSendUsdc() {
         await fetch("/api/transactions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ hash, owner: account, address: toAddr, amount, memo: memo ?? "", status, token }),
+          body: JSON.stringify({
+            hash,
+            owner: account,
+            address: toAddr,
+            amount,
+            memo: trimmedMemo,
+            status,
+            token,
+            memoId: memoId ?? undefined,
+            onchainMemo: !!memoId,
+          }),
         });
       } catch {
         // non-fatal
@@ -116,7 +163,7 @@ export function useSendUsdc() {
         }
       }
 
-      return { hash, status, seconds, fee, token };
+      return { hash, status, seconds, fee, token, memoId, onchainMemo: !!memoId };
     } catch (e) {
       if (!silent && toastId !== undefined) {
         toast.error(e instanceof Error ? e.message : "Payment failed", { id: toastId });

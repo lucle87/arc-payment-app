@@ -30,6 +30,40 @@ export function isToken(value: unknown): value is TokenSymbol {
   return value === "USDC" || value === "EURC";
 }
 
+// --- Arc on-chain transaction memo ---
+// Predeployed Memo contract on Arc testnet. Routing a transfer through this
+// contract attaches an on-chain memo (queryable later by memoId) while keeping
+// the user's wallet as the sender.
+export const ARC_MEMO_ADDRESS = "0x5294E9927c3306DcBaDb03fe70b92e01cCede505" as Address;
+
+export const MEMO_ABI = [
+  {
+    type: "function",
+    name: "memo",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "target", type: "address" },
+      { name: "data", type: "bytes" },
+      { name: "memoId", type: "bytes32" },
+      { name: "memoData", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "event",
+    name: "Memo",
+    anonymous: false,
+    inputs: [
+      { name: "sender", type: "address", indexed: true },
+      { name: "target", type: "address", indexed: true },
+      { name: "callDataHash", type: "bytes32", indexed: false },
+      { name: "memoId", type: "bytes32", indexed: true },
+      { name: "memo", type: "bytes", indexed: false },
+      { name: "memoIndex", type: "uint256", indexed: false },
+    ],
+  },
+] as const;
+
 /** Read an ERC-20 balance, formatted as a decimal string. */
 export async function getTokenBalance(address: Address, token: TokenSymbol): Promise<string> {
   const t = TOKENS[token];
