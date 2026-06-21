@@ -47,6 +47,11 @@ export async function POST(req: NextRequest) {
 
     const token: TxToken = body.token === "EURC" ? "EURC" : "USDC";
 
+    // On-chain memo metadata (optional)
+    const memoId =
+      typeof body.memoId === "string" && HEX_HASH.test(body.memoId) ? body.memoId : undefined;
+    const onchainMemo = body.onchainMemo === true || !!memoId;
+
     let status: TxStatus =
       body.status === "Success" || body.status === "Failed" ? body.status : "Pending";
     try {
@@ -65,6 +70,8 @@ export async function POST(req: NextRequest) {
       memo: typeof memo === "string" ? memo.slice(0, 200) : "",
       timestamp: new Date().toISOString(),
       status,
+      memoId,
+      onchainMemo,
     });
 
     return NextResponse.json({ success: true, status });

@@ -12,6 +12,8 @@ export type TxRecord = {
   memo: string;
   timestamp: string;
   status: TxStatus;
+  memoId?: string;
+  onchainMemo?: boolean;
 };
 
 const KEY = "transactions";

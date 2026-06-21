@@ -10,6 +10,8 @@ type Tx = {
   memo?: string;
   status: string;
   timestamp?: string;
+  memoId?: string;
+  onchainMemo?: boolean;
 };
 
 function shortAddr(a?: string) {
@@ -67,7 +69,23 @@ export default function TransactionTable({ transactions }: { transactions: Tx[] 
               <td className="p-5 font-semibold text-orange-400">
                 {tx.amount} {tx.token ?? "USDC"}
               </td>
-              <td className="p-5 text-zinc-400 text-sm">{tx.memo || "—"}</td>
+              <td className="p-5 text-sm text-zinc-400">
+                {tx.memo || tx.onchainMemo ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span>{tx.memo || "—"}</span>
+                    {tx.onchainMemo && (
+                      <span
+                        title="Stored on-chain via Arc Memo contract"
+                        className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-medium text-orange-300"
+                      >
+                        ⛓ on-chain
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </td>
               <td className="p-5"><StatusPill status={tx.status} /></td>
               <td className="p-5">
                 <a href={`/explorer/${tx.hash}`} className="font-mono text-xs text-zinc-500 hover:text-orange-400">
