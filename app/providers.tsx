@@ -2,7 +2,7 @@
 
 import { PrivyProvider } from "@privy-io/react-auth";
 import { Toaster } from "sonner";
-import { arcTestnet } from "viem/chains";
+import { arcTestnet, sepolia, baseSepolia, avalancheFuji } from "viem/chains";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +12,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         appearance: { theme: "dark", accentColor: "#f97316" },
         loginMethods: ["email"],
         defaultChain: arcTestnet,
-        supportedChains: [arcTestnet],
+        supportedChains: [arcTestnet, sepolia, baseSepolia, avalancheFuji],
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
           showWalletUIs: false,

@@ -1,35 +1,50 @@
-# EURC — hỗ trợ 2 loại tiền (USDC + EURC)
+# Bridge USDC cross-chain (Circle CCTP via Arc App Kit)
 
-Không cần cài thư viện mới.
+Trang /bridge mới: chuyển USDC giữa các chain bằng CCTP, ký bằng ví Privy.
+Luồng browser-wallet KHÔNG cần API key.
 
-## Giải nén đè (giữ cấu trúc thư mục) — 11 file
-- lib/chain.ts                 (thêm EURC, getEurcBalance, TOKENS, detectToken)
-- lib/useSendUsdc.ts           (tham số token)
-- lib/store.ts                 (TxRecord có token)
-- app/api/transactions/route.ts (lưu token)
-- components/SendForm.tsx      (nút chọn USDC/EURC + số dư token đang chọn)
-- components/HomeStats.tsx     (số dư cả USDC và EURC)
-- components/TransactionTable.tsx (hiện đúng đồng tiền mỗi dòng)
-- components/ChatPayment.tsx   (AI Wallet nhận "EURC")
-- components/AISendForm.tsx    (nhận "EURC")
-- components/AgentPayment.tsx  (nhận "EURC" cho cả lô)
-- app/receive/page.tsx         (request link chọn USDC/EURC)
+## 1) Cài 2 package (BẮT BUỘC) - máy mình không cài được, bạn chạy:
+  npm install @circle-fin/app-kit @circle-fin/adapter-viem-v2 --legacy-peer-deps
 
-## Chạy
+(viem đã có sẵn trong dự án.)
+
+## 2) Giải nén đè (giữ cấu trúc) - 3 file
+- components/BridgeForm.tsx   (form chọn chain + amount, gọi kit.bridge, hiện tiến trình)
+- app/bridge/page.tsx         (trang /bridge, login-gated)
+- components/Navbar.tsx        (thêm mục "Bridge")
+
+## 3) next.config — có thể cần transpile SDK
+Nếu build báo lỗi liên quan @circle-fin, mở next.config.js (hoặc .ts) thêm:
+
+  const nextConfig = {
+    transpilePackages: ["@circle-fin/app-kit", "@circle-fin/adapter-viem-v2"],
+  };
+
+## 4) Ví Privy phải mở được chain nguồn
+Bridge từ Ethereum Sepolia -> Arc thì ví cần hoạt động trên Sepolia + có ÍT ETH Sepolia để trả gas.
+Nếu chuyển chain báo lỗi, mở app/providers.tsx, thêm các chain vào cấu hình Privy
+(supportedChains), ví dụ thêm sepolia, baseSepolia từ viem/chains. Gửi mình providers.tsx
+nếu cần mình chỉnh.
+
+## Chạy thử
   Remove-Item -Recurse -Force .next
   npm run dev
-
-### Thử:
-- /send: bấm nút EURC -> số dư đổi sang EURC -> gửi 1 EURC (cần đã nạp EURC từ faucet).
-- AI Wallet: gõ "Send 1 EURC to Alice" -> review hiện EURC -> gửi.
-- /wallet: thấy số dư USDC + EURC.
-- /explorer: dòng giao dịch hiện đúng "USDC" hoặc "EURC".
-
-## Lấy EURC test
-faucet.circle.com -> chọn Arc Testnet -> sẽ có cả USDC và EURC.
+  # mở http://localhost:3000/bridge
+  # Chọn From=Ethereum Sepolia, To=Arc Testnet, amount=1, bấm Bridge.
+  # Theo dõi các bước: Approve -> Burn -> Fetch attestation -> Mint, mỗi bước có link explorer.
 
 ## Build + push
   npm run build
   git add .
-  git commit -m "Add EURC: multi-currency send, balances, history, AI detection"
+  git commit -m "Add cross-chain USDC bridge (Circle CCTP via App Kit)"
   git push
+
+## LƯU Ý QUAN TRỌNG
+- Bridge luôn đụng 1 chain ngoài Arc -> cần native gas (ETH/AVAX) ở chain đó. Đây là bản chất CCTP.
+- Lấy USDC testnet ở faucet.circle.com; ETH Sepolia ở faucet công khai (vd alchemy.com/faucets/ethereum-sepolia).
+- Khi bridge TỪ Arc, amount phải lớn hơn CCTP max fee, nếu nhỏ quá bước burn sẽ revert.
+- Mình không cài/chạy thử được SDK (máy không mạng). Code theo đúng tài liệu Arc.
+  Nếu có lỗi runtime/build, copy log gửi mình, mình sửa.
+- Danh sách chain hỗ trợ đầy đủ: docs.arc.io/app-kit/references/supported-blockchains
+  (mình để sẵn Arc, Ethereum Sepolia, Base Sepolia, Avalanche Fuji; thêm/bớt trong CHAINS của BridgeForm.tsx).
+- Nav giờ 9 mục, nếu thấy chật mình làm menu thu gọn (hamburger), cứ báo.
